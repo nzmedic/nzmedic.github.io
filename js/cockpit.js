@@ -1,0 +1,91 @@
+// js/cockpit.js
+import { computeOutputs } from "./model.js";
+
+const els = {};
+const state = {
+  uplift_pct: 10,
+  incentive_bps: 50,
+  loss_delta_bps: 25,
+  avg_loan: 18000
+};
+
+function money(x) {
+  const sign = x < 0 ? "-" : "";
+  const abs = Math.abs(x);
+  return sign + "$" + abs.toLocaleString(undefined, { maximumFractionDigits: 0 });
+}
+
+function percent(x) {
+  return (x * 100).toFixed(1) + "%";
+}
+
+function bind() {
+  // sliders
+  els.uplift = document.getElementById("uplift");
+  els.incentive = document.getElementById("incentive");
+  els.lossDelta = document.getElementById("lossDelta");
+  els.avgLoan = document.getElementById("avgLoan");
+
+  // readouts
+  els.upliftVal = document.getElementById("upliftVal");
+  els.incentiveVal = document.getElementById("incentiveVal");
+  els.lossDeltaVal = document.getElementById("lossDeltaVal");
+  els.avgLoanVal = document.getElementById("avgLoanVal");
+
+  // KPIs
+  els.kpiProfit = document.getElementById("kpiProfit");
+  els.kpiP10 = document.getElementById("kpiP10");
+  els.kpiProbLoss = document.getElementById("kpiProbLoss");
+  els.kpiOriginations = document.getElementById("kpiOriginations");
+
+  // chart div
+  els.profitChart = document.getElementById("profitChart");
+
+  // initial slider positions
+  els.uplift.value = state.uplift_pct;
+  els.incentive.value = state.incentive_bps;
+  els.lossDelta.value = state.loss_delta_bps;
+  els.avgLoan.value = state.avg_loan;
+
+  // events
+  els.uplift.addEventListener("input", () => { state.uplift_pct = Number(els.uplift.value); render(); });
+  els.incentive.addEventListener("input", () => { state.incentive_bps = Number(els.incentive.value); render(); });
+  els.lossDelta.addEventListener("input", () => { state.loss_delta_bps = Number(els.lossDelta.value); render(); });
+  els.avgLoan.addEventListener("input", () => { state.avg_loan = Number(els.avgLoan.value); render(); });
+}
+
+function render() {
+  // readouts
+  els.upliftVal.textContent = `${state.uplift_pct}%`;
+  els.incentiveVal.textContent = `${state.incentive_bps} bps`;
+  els.lossDeltaVal.textContent = `${state.loss_delta_bps} bps`;
+  els.avgLoanVal.textContent = money(state.avg_loan);
+
+  const out = computeOutputs(state);
+
+  // KPIs
+  els.kpiProfit.textContent = money(out.expectedProfit);
+  els.kpiP10.textContent = money(out.p10);
+  els.kpiProbLoss.textContent = percent(out.probLoss);
+  els.kpiOriginations.textContent = out.originations.toLocaleString();
+
+  // Chart: profit distribution histogram
+  const trace = {
+    x: out.dist,
+    type: "histogram",
+    nbinsx: 40
+  };
+
+  const layout = {
+    margin: { l: 40, r: 20, t: 10, b: 40 },
+    xaxis: { title: "Profit" },
+    yaxis: { title: "Frequency" }
+  };
+
+  Plotly.react(els.profitChart, [trace], layout, { displayModeBar: false, responsive: true });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  bind();
+  render();
+});
