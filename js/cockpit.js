@@ -56,7 +56,6 @@ function bind() {
 }
 
 function render() {
-  // Safety checks (so “blank” becomes diagnosable)
   if (!window.Plotly) {
     console.error("Plotly not found. Check plotly script tag is loading.");
     return;
@@ -83,23 +82,16 @@ function render() {
   els.kpiProbLoss.textContent = percent(out.probLoss);
   els.kpiOriginations.textContent = out.originations.toLocaleString();
 
-  // --- Chart 1: Profit distribution histogram ---
-  const hist = {
-    x: out.dist,
-    type: "histogram",
-    nbinsx: 40,
-    name: "Profit"
-  };
-
+  // Chart 1: Profit distribution
+  const hist = { x: out.dist, type: "histogram", nbinsx: 40, name: "Profit" };
   const layout1 = {
     margin: { l: 50, r: 20, t: 10, b: 40 },
     xaxis: { title: "Profit" },
     yaxis: { title: "Frequency" }
   };
-
   Plotly.react(els.profitChart, [hist], layout1, { displayModeBar: false, responsive: true });
 
-  // --- Chart 2: Trade-off curve (profit vs loss delta) ---
+  // Chart 2: Trade-off curve (profit vs loss delta)
   const xs = [];
   const ys = [];
   for (let d = 0; d <= 150; d += 5) {
@@ -123,7 +115,6 @@ function render() {
     xaxis: { title: "Loss-rate delta (bps)" },
     yaxis: { title: "Expected profit" }
   };
-
   Plotly.react(els.tradeoffChart, [curve, point], layout2, { displayModeBar: false, responsive: true });
 }
 
