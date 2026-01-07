@@ -31,17 +31,29 @@
               <h5 class="card-title">Levers</h5>
               <p class="text-muted small">We’ll wire these up next.</p>
 
-              <label class="form-label">Origination uplift</label>
-              <input type="range" class="form-range" min="0" max="30" value="10">
-
-              <label class="form-label mt-3">Incentive cost (bps)</label>
-              <input type="range" class="form-range" min="0" max="200" value="50">
-
-              <label class="form-label mt-3">Loss-rate delta (bps)</label>
-              <input type="range" class="form-range" min="0" max="150" value="25">
-
-              <label class="form-label mt-3">Avg loan size ($)</label>
-              <input type="range" class="form-range" min="5000" max="40000" value="18000" step="500">
+              <label class="form-label d-flex justify-content-between">
+                <span>Origination uplift</span>
+                <span class="text-muted small" id="upliftVal">—</span>
+              </label>
+              <input id="uplift" type="range" class="form-range" min="0" max="30" value="10">
+              
+              <label class="form-label d-flex justify-content-between mt-3">
+                <span>Incentive cost (bps)</span>
+                <span class="text-muted small" id="incentiveVal">—</span>
+              </label>
+              <input id="incentive" type="range" class="form-range" min="0" max="200" value="50">
+              
+              <label class="form-label d-flex justify-content-between mt-3">
+                <span>Loss-rate delta (bps)</span>
+                <span class="text-muted small" id="lossDeltaVal">—</span>
+              </label>
+              <input id="lossDelta" type="range" class="form-range" min="0" max="150" value="25">
+              
+              <label class="form-label d-flex justify-content-between mt-3">
+                <span>Avg loan size</span>
+                <span class="text-muted small" id="avgLoanVal">—</span>
+              </label>
+              <input id="avgLoan" type="range" class="form-range" min="5000" max="40000" value="18000" step="500">
             </div>
           </div>
         </div>
