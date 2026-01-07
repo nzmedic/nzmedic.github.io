@@ -6,7 +6,7 @@ const state = {
   uplift_pct: 10,
   incentive_bps: 50,
   loss_delta_bps: 25,
-  avg_loan: 18000
+  avg_loan: 10000
 };
 
 function money(x) {
