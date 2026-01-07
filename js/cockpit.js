@@ -40,6 +40,7 @@ function bind() {
 
   // chart div
   els.profitChart = document.getElementById("profitChart");
+  els.tradeoffChart = document.getElementById("tradeoffChart");
 
   // initial slider positions
   els.uplift.value = state.uplift_pct;
