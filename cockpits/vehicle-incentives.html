@@ -1,1 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Vehicle Incentives Cockpit</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body class="bg-light">
+
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+      <a class="navbar-brand fw-semibold" href="/">Decision Cockpits</a>
+      <div class="ms-auto d-flex gap-2">
+        <a class="btn btn-sm btn-outline-light" href="/cockpits/">Cockpits</a>
+        <a class="btn btn-sm btn-outline-light" href="/case-studies/vehicle-incentives.html">Case study</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container-fluid my-4">
+    <div class="px-3">
+      <h1 class="h3 fw-bold mb-1">Vehicle Incentive Decision Cockpit</h1>
+      <p class="text-muted mb-4">Adjust levers to explore growth, credit risk, and incentive cost trade-offs.</p>
+
+      <div class="row g-3">
+        <!-- Levers -->
+        <div class="col-lg-3">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title">Levers</h5>
+              <p class="text-muted small">We’ll wire these up next.</p>
+
+              <label class="form-label">Origination uplift</label>
+              <input type="range" class="form-range" min="0" max="30" value="10">
+
+              <label class="form-label mt-3">Incentive cost (bps)</label>
+              <input type="range" class="form-range" min="0" max="200" value="50">
+
+              <label class="form-label mt-3">Loss-rate delta (bps)</label>
+              <input type="range" class="form-range" min="0" max="150" value="25">
+
+              <label class="form-label mt-3">Avg loan size ($)</label>
+              <input type="range" class="form-range" min="5000" max="40000" value="18000" step="500">
+            </div>
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="col-lg-9">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <div class="text-muted small">Expected profit</div>
+                  <div class="h4 fw-bold mb-0">$—</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <div class="text-muted small">Downside (P10)</div>
+                  <div class="h4 fw-bold mb-0">$—</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <div class="text-muted small">Prob(loss)</div>
+                  <div class="h4 fw-bold mb-0">—%</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <div class="text-muted small">Originations</div>
+                  <div class="h4 fw-bold mb-0">—</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Charts placeholders -->
+            <div class="col-12">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <h5 class="card-title mb-1">Profit distribution</h5>
+                  <p class="text-muted small mb-0">Chart goes here (Plotly next step).</p>
+                  <div class="border rounded bg-white mt-3" style="height: 320px;"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <h5 class="card-title mb-1">Trade-offs</h5>
+                  <p class="text-muted small mb-0">Growth vs risk vs cost visual goes here.</p>
+                  <div class="border rounded bg-white mt-3" style="height: 320px;"></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
 
