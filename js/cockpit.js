@@ -38,7 +38,7 @@ function bind() {
   els.kpiProbLoss = document.getElementById("kpiProbLoss");
   els.kpiOriginations = document.getElementById("kpiOriginations");
 
-  // chart div
+  // chart divs
   els.profitChart = document.getElementById("profitChart");
   els.tradeoffChart = document.getElementById("tradeoffChart");
 
@@ -56,6 +56,19 @@ function bind() {
 }
 
 function render() {
+  // Safety checks (so “blank” becomes diagnosable)
+  if (!window.Plotly) {
+    console.error("Plotly not found. Check plotly script tag is loading.");
+    return;
+  }
+  if (!els.profitChart || !els.tradeoffChart) {
+    console.error("Chart div(s) not found:", {
+      profitChart: els.profitChart,
+      tradeoffChart: els.tradeoffChart
+    });
+    return;
+  }
+
   // readouts
   els.upliftVal.textContent = `${state.uplift_pct}%`;
   els.incentiveVal.textContent = `${state.incentive_bps} bps`;
@@ -70,27 +83,23 @@ function render() {
   els.kpiProbLoss.textContent = percent(out.probLoss);
   els.kpiOriginations.textContent = out.originations.toLocaleString();
 
-  // Chart: profit distribution histogram
-  const trace = {
+  // --- Chart 1: Profit distribution histogram ---
+  const hist = {
     x: out.dist,
     type: "histogram",
-    nbinsx: 40
+    nbinsx: 40,
+    name: "Profit"
   };
 
-  const layout = {
-    margin: { l: 40, r: 20, t: 10, b: 40 },
+  const layout1 = {
+    margin: { l: 50, r: 20, t: 10, b: 40 },
     xaxis: { title: "Profit" },
     yaxis: { title: "Frequency" }
   };
 
-  Plotly.react(els.profitChart, [trace], layout, { displayModeBar: false, responsive: true });
-}
+  Plotly.react(els.profitChart, [hist], layout1, { displayModeBar: false, responsive: true });
 
-document.addEventListener("DOMContentLoaded", () => {
-  bind(els.tradeoffChart = document.getElementById("tradeoffChart");
-      );
-  render(
-      // Trade-off curve: vary loss delta while keeping other levers fixed
+  // --- Chart 2: Trade-off curve (profit vs loss delta) ---
   const xs = [];
   const ys = [];
   for (let d = 0; d <= 150; d += 5) {
@@ -110,12 +119,15 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const layout2 = {
-    margin: { l: 50, r: 20, t: 10, b: 40 },
+    margin: { l: 60, r: 20, t: 10, b: 45 },
     xaxis: { title: "Loss-rate delta (bps)" },
     yaxis: { title: "Expected profit" }
   };
 
   Plotly.react(els.tradeoffChart, [curve, point], layout2, { displayModeBar: false, responsive: true });
+}
 
-  );
+document.addEventListener("DOMContentLoaded", () => {
+  bind();
+  render();
 });
