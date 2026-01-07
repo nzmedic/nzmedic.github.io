@@ -86,6 +86,35 @@ function render() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  bind();
-  render();
+  bind(els.tradeoffChart = document.getElementById("tradeoffChart");
+      );
+  render(
+      // Trade-off curve: vary loss delta while keeping other levers fixed
+  const xs = [];
+  const ys = [];
+  for (let d = 0; d <= 150; d += 5) {
+    const tmp = { ...state, loss_delta_bps: d };
+    const o = computeOutputs(tmp);
+    xs.push(d);
+    ys.push(o.expectedProfit);
+  }
+
+  const curve = { x: xs, y: ys, type: "scatter", mode: "lines", name: "Expected profit" };
+  const point = {
+    x: [state.loss_delta_bps],
+    y: [out.expectedProfit],
+    type: "scatter",
+    mode: "markers",
+    name: "Current setting"
+  };
+
+  const layout2 = {
+    margin: { l: 50, r: 20, t: 10, b: 40 },
+    xaxis: { title: "Loss-rate delta (bps)" },
+    yaxis: { title: "Expected profit" }
+  };
+
+  Plotly.react(els.tradeoffChart, [curve, point], layout2, { displayModeBar: false, responsive: true });
+
+  );
 });
