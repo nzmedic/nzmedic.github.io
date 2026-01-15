@@ -19,6 +19,72 @@ function percent(x) {
   return (x * 100).toFixed(1) + "%";
 }
 
+function setBadge(el, status) {
+  // status: "pass" | "warn" | "fail"
+  el.classList.remove("text-bg-secondary", "text-bg-success", "text-bg-warning", "text-bg-danger");
+  if (status === "pass") el.classList.add("text-bg-success");
+  else if (status === "warn") el.classList.add("text-bg-warning");
+  else if (status === "fail") el.classList.add("text-bg-danger");
+  else el.classList.add("text-bg-secondary");
+}
+
+// helper function. Provides decision guidence based on lever values
+function decisionLogic(state, out) {
+  // Guardrails (demo defaults)
+  const GR = {
+    probLossMax: 0.15,
+    p10Min: 0,
+    incentiveMaxBps: 120,
+    lossDeltaMaxBps: 80
+  };
+
+  const breaches = {
+    probLoss: out.probLoss > GR.probLossMax,
+    p10: out.p10 < GR.p10Min,
+    incentive: state.incentive_bps > GR.incentiveMaxBps,
+    lossDelta: state.loss_delta_bps > GR.lossDeltaMaxBps
+  };
+
+  const breachCount = Object.values(breaches).filter(Boolean).length;
+
+  // Decision label + copy
+  if (breachCount === 0) {
+    return {
+      badge: "Proceed",
+      badgeStatus: "pass",
+      text:
+        "Current settings are within policy guardrails. Expected profit is attractive with manageable downside risk. " +
+        "Recommend proceeding to a controlled pilot with monitoring.",
+      action:
+        "Pilot with weekly monitoring; lock guardrails and define stop-loss triggers."
+    };
+  }
+
+  // “Warn” when only one guardrail is breached slightly
+  if (breachCount === 1 && (breaches.incentive || breaches.lossDelta)) {
+    return {
+      badge: "Adjust",
+      badgeStatus: "warn",
+      text:
+        "One guardrail is breached. The proposal is directionally viable, but needs adjustment to stay within risk/cost appetite.",
+      action:
+        "Tune levers to bring the breached guardrail back in range before piloting."
+    };
+  }
+
+  // Otherwise, halt / redesign
+  return {
+    badge: "Hold",
+    badgeStatus: "fail",
+    text:
+      "Multiple guardrails are breached. Downside risk or cost is outside acceptable bounds under current assumptions. " +
+      "Recommend holding and redesigning the incentive structure or targeting strategy.",
+    action:
+      "Redesign: reduce incentive intensity, tighten eligibility, or shift channel mix; rerun scenarios."
+  };
+}
+
+
 function bind() {
   // sliders
   els.uplift = document.getElementById("uplift");
@@ -38,6 +104,17 @@ function bind() {
   els.kpiProbLoss = document.getElementById("kpiProbLoss");
   els.kpiOriginations = document.getElementById("kpiOriginations");
 
+  // Decision + guardrails
+  els.decisionBadge = document.getElementById("decisionBadge");
+  els.decisionText = document.getElementById("decisionText");
+  els.decisionAction = document.getElementById("decisionAction");
+
+  els.grProbLoss = document.getElementById("grProbLoss");
+  els.grP10 = document.getElementById("grP10");
+  els.grIncentive = document.getElementById("grIncentive");
+  els.grLossDelta = document.getElementById("grLossDelta");
+
+  
   // chart divs
   els.profitChart = document.getElementById("profitChart");
   els.tradeoffChart = document.getElementById("tradeoffChart");
@@ -82,6 +159,38 @@ function render() {
   els.kpiProbLoss.textContent = percent(out.probLoss);
   els.kpiOriginations.textContent = out.originations.toLocaleString();
 
+  // --- Guardrails + decision summary ---
+  const GR = {
+    probLossMax: 0.15,
+    p10Min: 0,
+    incentiveMaxBps: 120,
+    lossDeltaMaxBps: 80
+  };
+
+  // Update guardrail badges
+  const probLossOk = out.probLoss <= GR.probLossMax;
+  els.grProbLoss.textContent = probLossOk ? "OK" : "Breach";
+  setBadge(els.grProbLoss, probLossOk ? "pass" : "fail");
+
+  const p10Ok = out.p10 >= GR.p10Min;
+  els.grP10.textContent = p10Ok ? "OK" : "Breach";
+  setBadge(els.grP10, p10Ok ? "pass" : "fail");
+
+  const incentiveOk = state.incentive_bps <= GR.incentiveMaxBps;
+  els.grIncentive.textContent = incentiveOk ? "OK" : "Breach";
+  setBadge(els.grIncentive, incentiveOk ? "pass" : "warn");
+
+  const lossDeltaOk = state.loss_delta_bps <= GR.lossDeltaMaxBps;
+  els.grLossDelta.textContent = lossDeltaOk ? "OK" : "Breach";
+  setBadge(els.grLossDelta, lossDeltaOk ? "pass" : "warn");
+
+  // Decision summary
+  const d = decisionLogic(state, out);
+  els.decisionBadge.textContent = d.badge;
+  setBadge(els.decisionBadge, d.badgeStatus);
+  els.decisionText.textContent = d.text;
+  els.decisionAction.textContent = d.action;
+  
   // Chart 1: Profit distribution
   const hist = { x: out.dist, type: "histogram", nbinsx: 40, name: "Profit" };
   const layout1 = {
