@@ -5,7 +5,8 @@
   <title>Vehicle Loan Incentives Cockpit</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/assets/css/cockpit.css" /> //css file to standardise info/helper patterns on each cockpit
+  <link rel="stylesheet" href="/assets/css/cockpit.css" />
+  <!-- css file to standardise info/helper patterns on each cockpit -->
 </head>
 <body class="bg-light">
 
@@ -198,7 +199,7 @@
                                  title="TODO"
                                  onclick="return false;">ⓘ</a>
                             </span>
-                            <span class="badge text-bg-secondary" id="grProbLoss">—</span>
+                            <span class="badge text-bg-secondary" id="grP10">—</span>
                           </div>
                           <div class="helptext">Interpretation: TODO.</div>
                         </li>
@@ -213,7 +214,7 @@
                                  title="Increased/decreased cost of the selected incentive level relative to the current level."
                                  onclick="return false;">ⓘ</a>
                             </span>
-                            <span class="badge text-bg-secondary" id="grProbLoss">—</span>
+                            <span class="badge text-bg-secondary" id="grIncentive">—</span>
                           </div>
                           <div class="helptext">Interpretation: TODO</div>
                         </li>
@@ -227,7 +228,7 @@
                                  title="Increase/decrease on the loss rate relative to the current state."
                                  onclick="return false;">ⓘ</a>
                             </span>
-                            <span class="badge text-bg-secondary" id="grProbLoss">—</span>
+                            <span class="badge text-bg-secondary" id="grLossDelta">—</span>
                           </div>
                           <div class="helptext">Interpretation: As incentives increase we expect loan quality to decline alongside the increase in originations.</div>
                         </li>
@@ -290,12 +291,12 @@
                 </div>
               </div>
             
-              <a class="small text-decoration-none" data-bs-toggle="collapse" href="#howProfit" role="button" aria-expanded="false">
+              <a class="small text-decoration-none" data-bs-toggle="collapse" href="#howTradeoffs" role="button" aria-expanded="false">
                 How to read this →
               </a>
             </div>
             
-            <div class="collapse mt-3" id="howProfit">
+            <div class="collapse mt-3" id="howTradeoffs">
               <div class="border rounded p-3 bg-light">
                 <div class="kicker mb-2">Quick intuition</div>
                 <ul class="mb-0 small">
@@ -305,6 +306,16 @@
             </div>
 
             
+            <div class="col-12">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <h5 class="card-title mb-1">Profit distribution</h5>
+                  <p class="text-muted small mb-0">Monte Carlo approximation of outcomes from the current scenario settings.</p>
+                  <div id="profitChart" style="height: 320px;"></div>
+                </div>
+              </div>
+            </div>
+
             <div class="col-12">
               <div class="card shadow-sm">
                 <div class="card-body">
@@ -342,7 +353,7 @@
   <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
   <script type="module" src="/js/cockpit.js"></script>
 
-  // pull tooltip
+  <!-- pull tooltip -->
   <script>
   document.addEventListener("DOMContentLoaded", () => {
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -352,4 +363,3 @@
 
 </body>
 </html>
-
