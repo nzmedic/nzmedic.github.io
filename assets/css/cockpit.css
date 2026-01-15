@@ -1,0 +1,5 @@
+/* assets/css/cockpit.css */
+.helptext { font-size: 0.85rem; color: #6c757d; }
+.kicker { font-size: 0.8rem; color: #6c757d; letter-spacing: 0.02em; text-transform: uppercase; }
+.section-subtitle { color: #6c757d; font-size: 0.9rem; }
+.info-icon { cursor: help; text-decoration: none; }
