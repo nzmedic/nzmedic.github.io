@@ -1,8 +1,10 @@
-//recall that github uses Jekyll to render markdown files
+
 ---
 title: "Case study: Vehicle Introducer Incentives"
 layout: default
 ---
+
+//recall that github uses Jekyll to render markdown files
 
 # Case study: Vehicle Introducer Incentives
 
