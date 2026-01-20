@@ -1,6 +1,7 @@
 ---
 title: "Case study: Vehicle Introducer Incentives"
 layout: default
+## Contents
 ---
 
 # Lendy Scenario Analysis
@@ -10,9 +11,20 @@ layout: default
 ---
 
 ## Contents
+0. [Background Story](#background-story)
+1. [Step 1: Decision Framing](#step-1-decision-framing)
+2. [Step 2: System Boundary](#step-2-system-boundary)
+3. [Step 3: Scenario Definition](#step-3-scenario-definition)
+4. [Step 4: Quantitative Assumptions](#step-4-quantitative-assumptions)
+5. [Step 5: System Boundary](#step-5-outcome-modelling)
+6. [Step 6: Trade-offs & Robustness](#step-6-trade-offs-and-robustness)
+7. [Step 7: Decision & Guardrails](#step-7-decision-and-guardrails)
+8. [Step 8: Communication & Refresh](#step-8-communication-and-refresh)
+9. [How This Became a Decision Cockpit](#how-this-became-a-decision-cockpit)
 
 
-## Background Story: Why Lendy Needed Scenario Analysis
+## Background Story
+*Why Lendy Needed Scenario Analysis*
 
 Lendy is a fictitious, non-bank financial services lender with approximately **$1.5B in Assets Under Management (AUM)**. The business has grown steadily through **introducer-led distribution** (brokers, dealers, referrers), which accounts for roughly **90% of all originations**.
 
@@ -183,7 +195,7 @@ This scenario tests **latent upside** rather than aggressive optimism.
 
 ---
 
-## Step 6: Trade-offs & Robustness
+## Step 6: Trade Offs and Robustness
 
 **Strategy options evaluated**
 
@@ -203,7 +215,7 @@ This scenario tests **latent upside** rather than aggressive optimism.
 
 ---
 
-## Step 7: Decision & Guardrails
+## Step 7: Decision and Guardrails
 
 **Strategic direction**
 
@@ -223,7 +235,7 @@ This scenario tests **latent upside** rather than aggressive optimism.
 
 ---
 
-## Step 8: Communication & Refresh
+## Step 8: Communication and Refresh
 
 **Executive message**
 
