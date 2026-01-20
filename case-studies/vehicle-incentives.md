@@ -3,21 +3,9 @@ title: "Case study: Vehicle Introducer Incentives"
 layout: default
 ---
 
-# Case study: Vehicle Introducer Incentives at Lendy
-
-
-
-
-**Decision:**  
-Should we increase introducer incentives to grow vehicle lending without breaching risk appetite or eroding margin?
-
-[Open the interactive decision cockpit →](/cockpits/vehicle-incentives.html)
-
----
-
 # Lendy Scenario Analysis – Worked End-to-End Case Study
 
-*An example of applied, practical scenario analysis*
+*Public portfolio case study for a Decision Cockpit dashboard*
 
 ---
 
@@ -25,7 +13,7 @@ Should we increase introducer incentives to grow vehicle lending without breachi
 
 Lendy is a fictitious, non-bank financial services lender with approximately **$1.5B in Assets Under Management (AUM)**. The business has grown steadily through **introducer-led distribution** (brokers, dealers, referrers), which accounts for roughly **90% of all originations**.
 
-The CEO has set ambitious but deliberately non-linear growth target of:
+The CEO has set an ambitious but deliberately non-linear growth ambition:
 
 * **$3.5B AUM within 2 years**
 * **$5.0B AUM by 2030**
@@ -38,9 +26,7 @@ Importantly, the CEO has ruled out a move to direct-to-consumer channels. Growth
 
 By late 2024, the executive team recognised a recurring problem:
 
-> *Every strategy discussion collapsed into a single forecast, followed by debates about whether the assumptions underlying the forecast were “too optimistic” or “too conservative”.*
-
-Quarterly progress reviews turned into hist focused
+> *Every strategy discussion collapsed into a single forecast, followed by debates about whether the assumptions were “too optimistic” or “too conservative”.*
 
 Lendy introduced **enterprise scenario analysis** to shift the conversation away from prediction and toward **decision robustness**. The goal was not to find the “right answer”, but to understand:
 
@@ -48,7 +34,7 @@ Lendy introduced **enterprise scenario analysis** to shift the conversation away
 * Where it might fail
 * What guardrails leadership should put in place
 
-This case study documents the **first full scenario analysis cycle**, which later became the foundation for Lendy’s internal **Decision Cockpit dashboards**.
+This case study documents the **first full scenario analysis cycle**, which became the foundation for a suite of tools that drove informed decision making over individual opinion and point forecasts. A sample of **Decision Cockpit dashboards**, the primary tools are provided.
 
 ---
 
@@ -61,8 +47,8 @@ This case study documents the **first full scenario analysis cycle**, which late
 **Why this decision matters now**
 
 * Growth targets have been publicly signalled to investors
-* Funding markets are becoming less predictable
-* Introducer concentration is increasing as volumes scale
+* Traditional funding is at risk when markets turn. Diversification reduces risk and resiliance.
+* Introducer concentration is increasing
 
 **Time horizon**
 
@@ -76,8 +62,18 @@ This case study documents the **first full scenario analysis cycle**, which late
 
 **What failure looks like**
 
-* Growth achieved only by materially degrading credit quality
-* Funding costs erode margins faster than volumes grow
+* Growth achieved only by materially degrading credit quality i.e. quality remains critical despite a volume-based objective.
+* Funding costs erode margins faster than volumes grow i.e. the ROE / WACC trade off degrades
+* Foreseeable, but unmonitored, trends materially impact AUM i.e. inventives and other Lendy interventions negatively impact introducer behaviour  
+
+**Stakeholders and incentives**
+
+* Executive - Credit/Risk, Sales, Treasury, Strategy 
+* Sales – advocate for introducers and market interventions that work. Responsible for volume.
+* Strategy - distribute decisions, with trade offs, and ensure identified risks are incorporated into monitoring
+* Credit & risk – focused on downside protection and early warning signals
+
+The solution needed to align these perspectives in a single artefact.
 
 ---
 
@@ -90,16 +86,18 @@ This case study documents the **first full scenario analysis cycle**, which late
 
   * Vehicle loans (70%)
   * Personal loans (10%)
-  * Second-tier mortgages (10%)
+  * Residential mortgages (10%)
   * Small business loans (10%)
 * Portfolio-level loss rates
 * Net interest margin and funding cost
+* Introducer behaviour
 
 **Out of scope (by design)**
 
 * Borrower-level credit models
 * Full regulatory capital modelling
 * Direct-to-consumer channel economics
+* Originate-to-distribute and portfolio modelling
 
 **Controllable levers**
 
@@ -111,7 +109,7 @@ This case study documents the **first full scenario analysis cycle**, which late
 
 * Funding market conditions
 * Macro-driven credit stress
-* Dealer and broker behaviour
+* Introducer behaviour
 
 ---
 
@@ -145,6 +143,7 @@ This scenario tests **latent upside** rather than aggressive optimism.
 
 | Category                | Base Case | Downside | Upside   |
 | ----------------------- | --------- | -------- | -------- |
+| Avg Vehicle loan        | $10,000   | $8,000   | $12,000  |
 | Vehicle loan growth     | 18% p.a.  | 10% p.a. | 22% p.a. |
 | Other portfolios growth | 12% p.a.  | 6% p.a.  | 15% p.a. |
 | Portfolio loss rate     | 1.2%      | 2.0%     | 1.0%     |
@@ -253,142 +252,24 @@ The dashboard does not replace judgment. It makes trade-offs visible.
 
 This case study demonstrates how **scenario analysis, simple modelling, and data science practices** combine to support better strategic decisions—without pretending to predict the future.
 
-
-
-## Background Story: Why Lendy Needed Scenario Analysis
-
-Background Story: Why Lendy Needed Scenario Analysis
-
-Lendy is a fictitious, non-bank financial services lender with approximately $1.5B in Assets Under Management (AUM). The business has grown steadily through introducer-led distribution (brokers, dealers, referrers), which accounts for roughly 90% of all originations.
-
-The CEO has set an ambitious but deliberately non-linear growth ambition:
-
-$3.5B AUM within 2 years
-
-$5.0B AUM by 2030
-
-Importantly, the CEO has ruled out a move to direct-to-consumer channels. Growth must come from:
-
-Better utilisation of introducer networks
-
-Portfolio mix decisions
-
-Pricing, risk appetite, and funding strategy
-
-By late 2024, the executive team recognised a recurring problem:
-
-Every strategy discussion collapsed into a single forecast, followed by debates about whether the assumptions were “too optimistic” or “too conservative”.
-
-Lendy introduced enterprise scenario analysis to shift the conversation away from prediction and toward decision robustness. The goal was not to find the “right answer”, but to understand:
-
-What needs to be true for the growth plan to work
-
-Where it might fail
-
-What guardrails leadership should put in place
-
-This case study documents the first full scenario analysis cycle, which later became the foundation for Lendy’s internal Decision Cockpit dashboards.
-
-
-Vehicle lending growth was driven primarily through third-party introducers.  
-Management wanted to increase originations, but prior experience showed that:
-
-- Higher incentives can erode margin quickly
-- Growth can introduce adverse selection
-- Risk impacts are often visible only after volume ramps up
-
-The challenge was to support a **growth decision with explicit downside visibility and guardrails**, rather than relying on point forecasts.
-
----
-
-## Stakeholders and incentives
-
-- **Executive sponsor** – accountable for profitable growth and capital efficiency  
-- **Credit & risk** – focused on downside protection and early warning signals  
-- **Analytics lead** – needed a pragmatic, reusable decision tool  
-- **CTO / founder mindset** – preferred lightweight delivery with clear ROI  
-- **Sales / channel** – incentivised to maximise volume, not risk-adjusted profit  
-
-The solution needed to align these perspectives in a single artefact.
-
----
-
-## Approach
-
-The analysis was structured around decision-making rather than model complexity:
-
-1. Frame the commercial question as a small set of controllable levers  
-2. Quantify outcomes under uncertainty, not just expected values  
-3. Make downside risk explicit and interpretable  
-4. Translate risk appetite into simple policy guardrails  
-5. Package the analysis as an interactive “decision cockpit”  
-
----
-
-## What the cockpit shows
-
-The cockpit is designed to support executive conversation, not technical inspection.
+**What the cockpit shows**
 
 **Levers**
-- Expected origination uplift
-- Incentive cost per loan
-- Assumed deterioration in credit losses
-- Average loan size
 
-**Outputs**
-- Expected profit
-- Downside profit (P10)
-- Probability of loss
-- Trade-off curves showing diminishing returns to risk
+* Expected origination uplift
+* Incentive cost per loan
+* Assumed deterioration in credit losses
+* Average loan size
+
+Outputs
+
+* Expected profit**
+* Downside profit (P10)
+* Probability of loss
+* Trade-off curves showing diminishing returns to risk
 
 **Guardrails**
-- Maximum acceptable probability of loss
-- Minimum acceptable downside profit
-- Caps on incentive intensity and loss-rate drift
 
----
-
-## Governance and operating model
-
-The output of the analysis was not “a model”, but a **decision plus an operating approach**:
-
-- Pilot-scale deployment
-- Weekly monitoring during ramp-up
-- Pre-defined thresholds triggering intervention
-- Clear actions when guardrails are breached (pause, tighten, redesign)
-
-This allowed growth to proceed without relying on hindsight.
-
----
-
-## Outcome
-
-The result was a decision-ready artefact that:
-
-- Made trade-offs explicit
-- Reduced reliance on single-point forecasts
-- Created shared understanding across stakeholders
-- Could be reused for ongoing governance, not just initial approval
-
-The initial version was intentionally lightweight; accuracy could be increased without changing the decision framework.
-
----
-
-## Next iteration
-
-Planned enhancements included:
-
-- Replacing the synthetic engine with full Monte Carlo outputs  
-- Adding scenario saving and comparison  
-- Modelling channel mix and borrower quality feedback loops  
-- Exporting one-page board summaries per scenario  
-
----
-
-## What this demonstrates
-
-- Executive-ready framing of complex decisions  
-- Risk-aware thinking under uncertainty  
-- Translation of analytics into policy and guardrails  
-- Pragmatic delivery with a clear roadmap  
-
+* Maximum acceptable probability of loss
+* Minimum acceptable downside profit
+* Caps on incentive intensity and loss-rate drift
