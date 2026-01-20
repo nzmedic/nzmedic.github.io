@@ -3,11 +3,14 @@ title: "Case study: Vehicle Introducer Incentives"
 layout: default
 ---
 
-# Lendy Scenario Analysis – Worked End-to-End Case Study
+# Lendy Scenario Analysis
 
-*Public portfolio case study for a Decision Cockpit dashboard*
+*Case study delivering decision support artefacts for a fictitious finance company*
 
 ---
+
+## Contents
+
 
 ## Background Story: Why Lendy Needed Scenario Analysis
 
@@ -42,7 +45,7 @@ This case study documents the **first full scenario analysis cycle**, which beca
 
 **Decision statement**
 
-> How should Lendy grow from $1.5B to $5.0B AUM over the next 3–5 years while maintaining acceptable portfolio risk and funding resilience?
+> *How should Lendy grow from $1.5B to $5.0B AUM over the next 3–5 years while maintaining acceptable portfolio risk and funding resilience?*
 
 **Why this decision matters now**
 
@@ -252,7 +255,7 @@ The dashboard does not replace judgment. It makes trade-offs visible.
 
 This case study demonstrates how **scenario analysis, simple modelling, and data science practices** combine to support better strategic decisions—without pretending to predict the future.
 
-**What the cockpit shows**
+### What the cockpit shows
 
 **Levers**
 
@@ -261,9 +264,9 @@ This case study demonstrates how **scenario analysis, simple modelling, and data
 * Assumed deterioration in credit losses
 * Average loan size
 
-Outputs
+**Outputs**
 
-* Expected profit**
+* Expected profit
 * Downside profit (P10)
 * Probability of loss
 * Trade-off curves showing diminishing returns to risk
