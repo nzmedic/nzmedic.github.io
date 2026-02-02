@@ -1,0 +1,11 @@
+# build output
+_site/
+
+# local python env
+.venv/
+__pycache__/
+*.pyc
+
+# generated artefacts (do not commit)
+projects/lendy-loss-risk/outputs/
+projects/lendy-loss-risk/.pytest_cache/

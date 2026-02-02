@@ -1,5 +1,0 @@
-outputs/
-_site/
-.venv/
-__pycache__/
-*.pyc

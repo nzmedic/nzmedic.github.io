@@ -1,5 +1,6 @@
 // js/cockpit.js
 import { computeOutputs } from "./model.js";
+import { money, percent, setBadge } from "./ui.js";
 
 const els = {};
 const state = {
@@ -8,25 +9,6 @@ const state = {
   loss_delta_bps: 25,
   avg_loan: 10000
 };
-
-function money(x) {
-  const sign = x < 0 ? "-" : "";
-  const abs = Math.abs(x);
-  return sign + "$" + abs.toLocaleString(undefined, { maximumFractionDigits: 0 });
-}
-
-function percent(x) {
-  return (x * 100).toFixed(1) + "%";
-}
-
-function setBadge(el, status) {
-  // status: "pass" | "warn" | "fail"
-  el.classList.remove("text-bg-secondary", "text-bg-success", "text-bg-warning", "text-bg-danger");
-  if (status === "pass") el.classList.add("text-bg-success");
-  else if (status === "warn") el.classList.add("text-bg-warning");
-  else if (status === "fail") el.classList.add("text-bg-danger");
-  else el.classList.add("text-bg-secondary");
-}
 
 // helper function. Provides decision guidence based on lever values
 function decisionLogic(state, out) {
