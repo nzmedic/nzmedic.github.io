@@ -1,0 +1,169 @@
+name: Build & Deploy Cockpit to Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run cockpit (base + stress scenarios)
+        run: |
+          python scripts/run_cockpit.py --scenario base
+          python scripts/run_cockpit.py --scenario mild_stress
+          python scripts/run_cockpit.py --scenario severe_stress
+
+      - name: Build static site (_site)
+        run: |
+          rm -rf _site
+          mkdir -p _site/outputs
+          cp -r outputs/* _site/outputs/ || true
+
+          # Simple landing page
+          cat > _site/index.html << 'EOF'
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <title>Lendy Loss-Risk Decision Cockpit (MVP)</title>
+            <style>
+              body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 2rem; max-width: 1100px; }
+              h1 { margin-bottom: 0.25rem; }
+              .sub { color: #555; margin-top: 0; }
+              .grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
+              @media (min-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
+              .card { border: 1px solid #ddd; border-radius: 12px; padding: 1rem; }
+              img { max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #eee; }
+              code { background: #f6f6f6; padding: 0.15rem 0.35rem; border-radius: 6px; }
+              ul { margin-top: 0.5rem; }
+              a { color: inherit; }
+              .small { font-size: 0.95rem; color: #444; }
+            </style>
+          </head>
+          <body>
+            <h1>Lendy Loss-Risk Decision Cockpit (MVP)</h1>
+            <p class="sub">Generated automatically via GitHub Actions → published to GitHub Pages.</p>
+
+            <div class="card">
+              <p class="small">
+                This cockpit uses a minimum viable model stack:
+                <b>PD</b> (how many fail), <b>Timing</b> (when they fail), <b>LGD</b> (how costly),
+                plus simple <b>scenario multipliers</b>. Outputs below are generated from the CSV inputs in <code>/data</code>.
+              </p>
+            </div>
+
+            <h2>Scenarios</h2>
+
+            <h3>Base</h3>
+            <div class="grid">
+              <div class="card">
+                <h4>Expected loss by product</h4>
+                <img src="outputs/loss_by_product_base.png" alt="Loss by product (base)">
+              </div>
+              <div class="card">
+                <h4>Expected loss over time</h4>
+                <img src="outputs/loss_over_time_base.png" alt="Loss over time (base)">
+              </div>
+            </div>
+            <div class="card">
+              <h4>Downloads (base)</h4>
+              <ul>
+                <li><a href="outputs/summary_by_product_base.csv">summary_by_product_base.csv</a></li>
+                <li><a href="outputs/summary_total_base.csv">summary_total_base.csv</a></li>
+                <li><a href="outputs/monthly_view_base.csv">monthly_view_base.csv</a></li>
+              </ul>
+            </div>
+
+            <h3>Mild stress</h3>
+            <div class="grid">
+              <div class="card">
+                <h4>Expected loss by product</h4>
+                <img src="outputs/loss_by_product_mild_stress.png" alt="Loss by product (mild stress)">
+              </div>
+              <div class="card">
+                <h4>Expected loss over time</h4>
+                <img src="outputs/loss_over_time_mild_stress.png" alt="Loss over time (mild stress)">
+              </div>
+            </div>
+            <div class="card">
+              <h4>Downloads (mild stress)</h4>
+              <ul>
+                <li><a href="outputs/summary_by_product_mild_stress.csv">summary_by_product_mild_stress.csv</a></li>
+                <li><a href="outputs/summary_total_mild_stress.csv">summary_total_mild_stress.csv</a></li>
+                <li><a href="outputs/monthly_view_mild_stress.csv">monthly_view_mild_stress.csv</a></li>
+              </ul>
+            </div>
+
+            <h3>Severe stress</h3>
+            <div class="grid">
+              <div class="card">
+                <h4>Expected loss by product</h4>
+                <img src="outputs/loss_by_product_severe_stress.png" alt="Loss by product (severe stress)">
+              </div>
+              <div class="card">
+                <h4>Expected loss over time</h4>
+                <img src="outputs/loss_over_time_severe_stress.png" alt="Loss over time (severe stress)">
+              </div>
+            </div>
+            <div class="card">
+              <h4>Downloads (severe stress)</h4>
+              <ul>
+                <li><a href="outputs/summary_by_product_severe_stress.csv">summary_by_product_severe_stress.csv</a></li>
+                <li><a href="outputs/summary_total_severe_stress.csv">summary_total_severe_stress.csv</a></li>
+                <li><a href="outputs/monthly_view_severe_stress.csv">monthly_view_severe_stress.csv</a></li>
+              </ul>
+            </div>
+
+            <hr />
+            <p class="small">
+              Tip: update <code>/data</code> inputs and push to <code>main</code> to regenerate this page.
+            </p>
+          </body>
+          </html>
+          EOF
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,5 +1,12 @@
 # Lendy Loss-Risk Decision Cockpit (MVP)
 
+## Live cockpit (GitHub Pages)
+- View the latest generated cockpit here: <your Pages URL>
+
+## Build status
+![Build & Deploy Cockpit to Pages](../../actions/workflows/pages.yml/badge.svg)
+
+
 This repo implements a **minimum viable model stack** to support a sub-portfolio loss-risk cockpit for a specialist lender.
 
 It intentionally uses simple, explainable components:
