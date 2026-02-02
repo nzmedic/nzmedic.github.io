@@ -1,0 +1,6 @@
+as_of_date,product,risk_tier,balance,average_loan_size,vintage_month
+2026-02-01,vehicle,A,120000000,18000,2025-08
+2026-02-01,vehicle,B,90000000,15000,2025-10
+2026-02-01,vehicle,C,60000000,12000,2025-12
+2026-02-01,mortgage,A,80000000,250000,2025-09
+2026-02-01,small_business,B,30000000,40000,2025-11
