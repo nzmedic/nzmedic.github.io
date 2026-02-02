@@ -1,0 +1,6 @@
+product,risk_tier,annual_probability_of_default
+vehicle,A,0.02
+vehicle,B,0.05
+vehicle,C,0.10
+mortgage,A,0.01
+small_business,B,0.07
