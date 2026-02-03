@@ -7,5 +7,5 @@ __pycache__/
 *.pyc
 
 # generated artefacts (do not commit)
-projects/lendy-loss-risk/outputs/
+projects/lendy-loss-risk/outputs/ #Feb '26: include this for demo. In practice this would be ignored and generated at run time 
 projects/lendy-loss-risk/.pytest_cache/

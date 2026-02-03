@@ -15,8 +15,8 @@ def get_scenario(scenarios: pd.DataFrame, scenario_name: str) -> dict:
 def apply_scenario_to_segments(segments: pd.DataFrame, sc: dict) -> pd.DataFrame:
     out = segments.copy()
     out["scenario_name"] = sc["scenario_name"]
-    out["pd_annual_scn"] = (out["annual_probability_of_default"] * sc["probability_of_default_multiplier"]).clip(0, 1)
-    out["lgd_scn"] = (out["base_loss_given_default"] * sc["loss_given_default_multiplier"]).clip(0, 1)
+    out["pd_annual_scn"] = (out["annual_probability_of_default"] * sc["pd_multiplier"]).clip(0, 1)
+    out["lgd_scn"] = (out["base_loss_given_default"] * sc["lgd_multiplier"]).clip(0, 1)
     return out
 
 def apply_timing_acceleration(month_timing: pd.DataFrame, sc: dict, horizon_months: int) -> pd.DataFrame:
