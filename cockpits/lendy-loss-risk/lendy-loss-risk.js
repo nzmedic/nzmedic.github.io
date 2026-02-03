@@ -73,15 +73,17 @@ function renderLossByProduct(rows) {
         return;
     }
 
+    // Your headers:
+    // scenario_name,product,balance,expected_loss,expected_default_balance,expected_defaults_count,loss_rate
     for (const r of rows) {
-        const product = r.product || r.sub_portfolio || "—";
+        const product = r.product || "—";
         const tr = document.createElement("tr");
         tr.innerHTML = `
-      <td class="text-capitalize">${product}</td>
-      <td class="text-end">${money(r.balance)}</td>
-      <td class="text-end">${money(r.expected_loss)}</td>
-      <td class="text-end">${percent(r.loss_rate, 2)}</td>
-      <td class="text-end">${number(r.expected_default_count)}</td>
+    <td class="text-capitalize">${product}</td>
+    <td class="text-end">${money(r.balance)}</td>
+    <td class="text-end">${money(r.expected_loss)}</td>
+    <td class="text-end">${percent(r.loss_rate, 2)}</td>
+    <td class="text-end">${number(r.expected_defaults_count)}</td>
     `;
         tbody.appendChild(tr);
     }
@@ -96,14 +98,35 @@ function renderLossOverTime(rows) {
         return;
     }
 
+    // Headers:    
+    // scenario_name,months_since_origination,product,expected_loss_month,expected_defaults_count_month
+    //
+    // v1: aggregate across products to produce a portfolio-total timing curve by month
+    const byMonth = new Map();
+
     for (const r of rows) {
-        const month = r.month ?? r.months_since_origination ?? "—";
+        const m = Number(r.months_since_origination);
+        if (!Number.isFinite(m)) continue;
+
+        const el = Number(r.expected_loss_month) || 0;
+        const dc = Number(r.expected_defaults_count_month) || 0;
+
+        const cur = byMonth.get(m) || { expected_loss: 0, expected_default_count: 0 };
+        cur.expected_loss += el;
+        cur.expected_default_count += dc;
+        byMonth.set(m, cur);
+    }
+
+    const months = Array.from(byMonth.keys()).sort((a, b) => a - b);
+
+    for (const m of months) {
+        const v = byMonth.get(m);
         const tr = document.createElement("tr");
         tr.innerHTML = `
-      <td>${month}</td>
-      <td class="text-end">${money(r.expected_loss)}</td>
-      <td class="text-end">${money(r.expected_default_balance)}</td>
-      <td class="text-end">${number(r.expected_default_count)}</td>
+    <td>${m}</td>
+    <td class="text-end">${money(v.expected_loss)}</td>
+    <td class="text-end">—</td>
+    <td class="text-end">${number(v.expected_default_count)}</td>
     `;
         tbody.appendChild(tr);
     }

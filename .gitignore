@@ -1,4 +1,4 @@
-# build output
+# build output when moving to github actions
 _site/
 
 # local python env
@@ -6,6 +6,6 @@ _site/
 __pycache__/
 *.pyc
 
-# generated artefacts (do not commit)
-projects/lendy-loss-risk/outputs/ #Feb '26: include this for demo. In practice this would be ignored and generated at run time 
+# generated artefacts
+projects/lendy-loss-risk/outputs/
 projects/lendy-loss-risk/.pytest_cache/
