@@ -10,7 +10,7 @@ def estimate_defaults_and_losses_by_segment(segments: pd.DataFrame, horizon_year
     out["pd_horizon"] = (out["pd_annual_scn"] * horizon_years).clip(0, 1)
     out["expected_default_balance"] = out["balance"] * out["pd_horizon"]
     out["expected_loss"] = out["expected_default_balance"] * out["lgd_scn"]
-    out["expected_defaults_count"] = (out["expected_default_balance"] / out["avg_loan_size"]).replace([np.inf, -np.inf], np.nan).fillna(0)
+    out["expected_defaults_count"] = (out["expected_default_balance"] / out["average_loan_size"]).replace([np.inf, -np.inf], np.nan).fillna(0)
     return out
 
 def allocate_losses_over_time(segments_losses: pd.DataFrame, month_timing: pd.DataFrame) -> pd.DataFrame:

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Lendy — Sub-portfolio Loss Risk Cockpit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Reuse Bootstrap + shared cockpit CSS exactly like Vehicle Incentives -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/assets/css/cockpit.css" />
+</head>
+
+<body class="bg-light">
+
+    <!-- Reuse nav pattern + link conventions -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand fw-semibold" href="/">Decision Cockpits</a>
+            <div class="ms-auto d-flex gap-2">
+                <a class="btn btn-sm btn-outline-light" href="/cockpits/">Cockpits</a>
+                <a class="btn btn-sm btn-outline-light" href="/case-studies/lendy-loss-risk">Case study</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container my-4">
+
+        <!-- Header -->
+        <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-between gap-3 mb-3">
+            <div>
+                <h1 class="h3 mb-1">Sub-portfolio Loss Risk Cockpit</h1>
+                <p class="text-muted mb-0">
+                    Compare expected losses across vehicle, mortgage, personal, and small business under scenario
+                    stress.
+                </p>
+            </div>
+
+            <!-- Scenario selector -->
+            <div class="card shadow-sm">
+                <div class="card-body py-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <label for="scenarioSelect" class="small text-muted mb-0">Scenario</label>
+                        <select id="scenarioSelect" class="form-select form-select-sm" style="min-width: 180px;">
+                            <option value="base">base</option>
+                            <option value="mild_stress">mild_stress</option>
+                            <option value="severe_stress">severe_stress</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="row g-3 mb-3">
+            <div class="col-12 col-md-4 col-xl-2">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">Balance</div>
+                        <div class="h4 mb-0" id="kpiBalance">—</div>
+                        <div class="text-muted small mt-1" id="kpiBalanceHelp"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-4 col-xl-2">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">Expected Loss</div>
+                        <div class="h4 mb-0" id="kpiExpectedLoss">—</div>
+                        <div class="text-muted small mt-1" id="kpiExpectedLossHelp"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-4 col-xl-2">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">Loss Rate</div>
+                        <div class="h4 mb-0" id="kpiLossRate">—</div>
+                        <div class="text-muted small mt-1" id="kpiLossRateHelp"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-4 col-xl-3">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">Expected Default Balance</div>
+                        <div class="h4 mb-0" id="kpiDefaultBal">—</div>
+                        <div class="text-muted small mt-1" id="kpiDefaultBalHelp"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-4 col-xl-3">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">Expected Default Count</div>
+                        <div class="h4 mb-0" id="kpiDefaultCount">—</div>
+                        <div class="text-muted small mt-1" id="kpiDefaultCountHelp"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tables -->
+        <div class="row g-3">
+            <!-- Loss by product -->
+            <div class="col-12 col-lg-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="fw-semibold">Loss by product</div>
+                                <div class="text-muted small">Expected loss split by sub-portfolio.</div>
+                            </div>
+                            <a class="btn btn-sm btn-outline-secondary" id="dlLossByProduct" href="#" download>
+                                Download CSV
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0" id="tblLossByProduct">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th class="text-end">Balance</th>
+                                        <th class="text-end">Expected loss</th>
+                                        <th class="text-end">Loss rate</th>
+                                        <th class="text-end">Expected default count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="5" class="text-muted">Loading…</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-muted small mt-2">
+                            Note: v1 renders tables (no new charting libraries). If your Vehicle Incentives cockpit
+                            already has chart helpers,
+                            we can swap these tables to charts using the same approach later.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loss over time -->
+            <div class="col-12 col-lg-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="fw-semibold">Loss over time</div>
+                                <div class="text-muted small">Expected loss by months since origination.</div>
+                            </div>
+                            <a class="btn btn-sm btn-outline-secondary" id="dlLossOverTime" href="#" download>
+                                Download CSV
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive" style="max-height: 360px;">
+                            <table class="table table-sm align-middle mb-0" id="tblLossOverTime">
+                                <thead>
+                                    <tr>
+                                        <th>Months since origination</th>
+                                        <th class="text-end">Expected loss</th>
+                                        <th class="text-end">Expected default count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="3" class="text-muted">Loading…</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-muted small mt-2">
+                            This is the “timing curve” view: *when* losses are expected to land, not just how much.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Underlying outputs -->
+        <div class="card shadow-sm mt-3">
+            <div class="card-body">
+                <div class="fw-semibold mb-1">Underlying outputs</div>
+                <div class="text-muted small mb-2">
+                    Quick access to the scenario outputs used by this cockpit.
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-sm btn-outline-primary" id="dlKpisJson" href="#" download>KPIs (JSON)</a>
+                    <a class="btn btn-sm btn-outline-primary" id="dlLossByProductCsv2" href="#" download>Loss by product
+                        (CSV)</a>
+                    <a class="btn btn-sm btn-outline-primary" id="dlLossOverTimeCsv2" href="#" download>Loss over time
+                        (CSV)</a>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Reuse shared JS assets -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="/js/cockpit.js"></script>
+    <script type="module" src="/js/model.js"></script>
+
+    <!-- New cockpit-specific JS -->
+    <script type="module" src="/cockpits/lendy-loss-risk/lendy-loss-risk.js"></script>
+</body>
+
+</html>

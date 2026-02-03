@@ -24,6 +24,8 @@ The goal is to provide decision-grade visibility into:
 
 ```bash
 pip install -r requirements.txt
-python scripts/run_cockpit.py --scenario base
-python scripts/run_cockpit.py --scenario mild_stress
-python scripts/run_cockpit.py --scenario severe_stress
+
+python -m scripts.run_cockpit --scenario base
+python -m scripts.run_cockpit --scenario mild_stress
+python -m scripts.run_cockpit --scenario severe_stress
+

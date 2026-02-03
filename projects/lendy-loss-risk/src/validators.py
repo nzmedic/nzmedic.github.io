@@ -9,21 +9,21 @@ def require_columns(df: pd.DataFrame, cols: list[str], name: str) -> None:
         raise ValueError(f"{name} missing columns: {missing}")
 
 def validate_portfolio(df: pd.DataFrame) -> None:
-    require_columns(df, ["as_of_date","product","risk_tier","balance","avg_loan_size","vintage_month"], "portfolio_snapshot")
+    require_columns(df, ["as_of_date","product","risk_tier","balance","average_loan_size","vintage_month"], "portfolio_snapshot")
     if (df["balance"] < 0).any():
         raise ValueError("portfolio_snapshot: negative balances found")
-    if (df["avg_loan_size"] <= 0).any():
-        raise ValueError("portfolio_snapshot: non-positive avg_loan_size found")
+    if (df["average_loan_size"] <= 0).any():
+        raise ValueError("portfolio_snapshot: non-positive average_loan_size found")
 
 def validate_pd(df: pd.DataFrame) -> None:
-    require_columns(df, ["product","risk_tier","annual_pd"], "pd_table")
-    if (df["annual_pd"] < 0).any() or (df["annual_pd"] > 1).any():
-        raise ValueError("pd_table: annual_pd must be in [0,1]")
+    require_columns(df, ["product","risk_tier","annual_probability_of_default"], "pd_table")
+    if (df["annual_probability_of_default"] < 0).any() or (df["annual_probability_of_default"] > 1).any():
+        raise ValueError("pd_table: annual_probability_of_default must be in [0,1]")
 
 def validate_lgd(df: pd.DataFrame) -> None:
-    require_columns(df, ["product","base_lgd"], "lgd_table")
-    if (df["base_lgd"] < 0).any() or (df["base_lgd"] > 1).any():
-        raise ValueError("lgd_table: base_lgd must be in [0,1]")
+    require_columns(df, ["product","base_loss_given_default"], "lgd_table")
+    if (df["base_loss_given_default"] < 0).any() or (df["base_loss_given_default"] > 1).any():
+        raise ValueError("lgd_table: base_loss_given_default must be in [0,1]")
 
 def validate_timing(df: pd.DataFrame) -> None:
     require_columns(df, ["bucket","month_start","month_end","share_of_defaults"], "timing_curve")
@@ -36,10 +36,10 @@ def validate_timing(df: pd.DataFrame) -> None:
         raise ValueError(f"timing_curve: shares must sum to 1.0, got {s}")
 
 def validate_scenarios(df: pd.DataFrame) -> None:
-    require_columns(df, ["scenario_name","pd_multiplier","lgd_multiplier","timing_acceleration"], "scenarios")
-    if (df["pd_multiplier"] <= 0).any():
-        raise ValueError("scenarios: pd_multiplier must be > 0")
-    if (df["lgd_multiplier"] <= 0).any():
-        raise ValueError("scenarios: lgd_multiplier must be > 0")
+    require_columns(df, ["scenario_name","probability_of_default_multiplier","loss_given_default_multiplier","timing_acceleration"], "scenarios")
+    if (df["probability_of_default_multiplier"] <= 0).any():
+        raise ValueError("scenarios: probability_of_default_multiplier must be > 0")
+    if (df["loss_given_default_multiplier"] <= 0).any():
+        raise ValueError("scenarios: loss_given_default_multiplier must be > 0")
     if (df["timing_acceleration"] <= 0).any():
         raise ValueError("scenarios: timing_acceleration must be > 0")

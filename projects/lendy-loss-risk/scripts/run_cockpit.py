@@ -1,5 +1,5 @@
 import argparse
-from pathlib import Path
+import json
 
 from src.config import get_paths
 from src.io_utils import read_csv, ensure_dir
@@ -18,7 +18,7 @@ def main():
     parser = argparse.ArgumentParser(description="Lendy sub-portfolio loss-risk cockpit (MVP)")
     parser.add_argument("--scenario", type=str, default="base", help="Scenario name from data/scenarios.csv")
     parser.add_argument("--horizon_months", type=int, default=36, help="Months to allocate timing across")
-    parser.add_argument("--horizon_years", type=float, default=1.0, help="Years horizon for PD conversion (MVP linear)")
+    parser.add_argument("--horizon_years", type=float, default=1.0, help="Years horizon for probability of default conversion (MVP linear)")
     args = parser.parse_args()
 
     paths = get_paths()
@@ -38,7 +38,7 @@ def main():
     validate_timing(timing_curve)
     validate_scenarios(scenarios)
 
-    # Attach PD + LGD
+    # Attach probability of default and loss given default
     segments = attach_pd(portfolio, pd_table)
     segments = attach_lgd(segments, lgd_table)
 
@@ -59,22 +59,42 @@ def main():
     total = summary_total(seg_losses)
     monthly = monthly_view(alloc)
 
-    # Write outputs
-    prod_path = paths.outputs / f"summary_by_product_{args.scenario}.csv"
-    total_path = paths.outputs / f"summary_total_{args.scenario}.csv"
-    monthly_path = paths.outputs / f"monthly_view_{args.scenario}.csv"
-    prod.to_csv(prod_path, index=False)
-    total.to_csv(total_path, index=False)
-    monthly.to_csv(monthly_path, index=False)
+    # Write outputs   
+    loss_by_product_path = paths.outputs / f"loss_by_product_{args.scenario}.csv"
+    loss_over_time_path = paths.outputs / f"loss_over_time_{args.scenario}.csv"
+    kpis_path = paths.outputs / f"kpis_{args.scenario}.json"
+
+    # Keep the old names too, as at Jan '26
+    # prod.to_csv(paths.outputs / f"summary_by_product_{args.scenario}.csv", index=False)
+    # total.to_csv(paths.outputs / f"summary_total_{args.scenario}.csv", index=False)
+    # monthly.to_csv(paths.outputs / f"monthly_view_{args.scenario}.csv", index=False)
+
+    prod.to_csv(loss_by_product_path, index=False)
+    monthly.to_csv(loss_over_time_path, index=False)
+
+    # KPI JSON: force stable schema for the cockpit
+    # Assumes `total` is a 1-row DF with matching columns.
+    # If column names actually differ, map them here.
+    t = total.iloc[0].to_dict()
+    kpis = {
+        "balance": float(t.get("balance", 0.0)),
+        "expected_loss": float(t.get("expected_loss", 0.0)),
+        "loss_rate": float(t.get("loss_rate", 0.0)),
+        "expected_default_balance": float(t.get("expected_default_balance", 0.0)),
+        "expected_default_count": float(t.get("expected_default_count", 0.0)),
+    }
+    with open(kpis_path, "w", encoding="utf-8") as f:
+        json.dump(kpis, f, indent=2)
+
 
     # Plots
     plot_loss_by_product(prod, paths.outputs, args.scenario)
     plot_monthly_loss(monthly, paths.outputs, args.scenario)
 
     print("✅ Cockpit run complete")
-    print(f"- {prod_path}")
-    print(f"- {total_path}")
-    print(f"- {monthly_path}")
+    print(f"- {loss_by_product_path}")
+    print(f"- {loss_over_time_path}")
+    print(f"- {kpis_path}")
     print(f"- outputs/*.png")
 
 if __name__ == "__main__":
