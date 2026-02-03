@@ -1,35 +1,307 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
-  <title>Cockpits | Decision Cockpits</title>
+  <title>Vehicle Loan Incentives Cockpit</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/css/cockpit.css" />
+  <!-- css file to standardise info/helper patterns on each cockpit -->
 </head>
+
 <body class="bg-light">
 
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
       <a class="navbar-brand fw-semibold" href="/">Decision Cockpits</a>
-      <div class="ms-auto">
-        <a class="btn btn-sm btn-outline-light" href="/">Home</a>
+      <div class="ms-auto d-flex gap-2">
+        <a class="btn btn-sm btn-outline-light" href="/cockpits/">Cockpits</a>
+        <a class="btn btn-sm btn-outline-light" href="/case-studies/vehicle-incentives">Case study</a>
       </div>
     </div>
   </nav>
 
-  <main class="container my-5">
-    <h1 class="fw-bold mb-3">Cockpits</h1>
-    <p class="text-muted">Interactive decision tools designed for executive conversations.</p>
-
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <h5 class="card-title mb-1">Vehicle Incentive Decision Cockpit</h5>
-        <p class="text-muted mb-3">Growth vs risk vs cost trade-offs for introducer-led lending.</p>
-        <a class="btn btn-primary" href="/cockpits/vehicle-incentives.html">Open</a>
+  <main class="container-fluid my-4">
+    <div class="px-3">
+      <h1 class="h3 fw-bold mb-1">Vehicle Loan Incentive Decision Cockpit</h1>
+      <p class="text-muted mb-4">Objective: Explore increased origator incentives to drive loan growth. Trade this off
+        against possible downside impacts of loss rate (reducing originator quality) and average loan size.</p>
+      <p class="text-muted mb-1">
+        <span class="fw-semibold">Decision:</span>
+        Should we increase introducer incentives to grow vehicle lending while staying within risk appetite and margin
+        guardrails?
+      </p>
+      <p class="section-subtitle mb-4">
+        Adjust levers to test scenarios, then use guardrails + charts to judge downside risk.
+        <a class="text-decoration-none" href="/case-studies/vehicle-incentives#decision">Learn more →</a>
+      </p>
+      <div class="row g-3">
+        <!-- Levers + Guardrails -->
+        <div class="col-lg-3">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title">Levers</h5>
+              <p class="text-muted small">Adjustable factors in our scenario analysis</p>
+              <label class="form-label d-flex justify-content-between">
+                <span>
+                  Origination uplift
+                  <a href="#" class="info-icon text-muted ms-1" data-bs-toggle="tooltip" data-bs-placement="top"
+                    title="Use this to set the expected increase in orgination. Then factor in adverse effects in the other filters"
+                    onclick="return false;">ⓘ</a>
+                </span>
+                <span class="text-muted small" id="upliftVal">—</span>
+              </label>
+              <div class="helptext mb-2">More referrals convert to funded loans (growth lever).</div>
+              <input id="uplift" type="range" class="form-range" min="0" max="30" value="10">
+              <label class="form-label d-flex justify-content-between align-items-center mb-1 mt-3">
+                <span>
+                  Incentive cost (bps)
+                  <a href="#" class="info-icon text-muted ms-1" data-bs-toggle="tooltip"
+                    title="Average incentive paid per loan, expressed as basis points of loan value. This directly reduces margin."
+                    onclick="return false;">ⓘ</a>
+                </span>
+                <span class="text-muted small" id="incentiveVal">—</span>
+              </label>
+              <div class="helptext mb-2">Higher incentives drive volume but reduce margin.</div>
+              <input id="incentive" type="range" class="form-range" min="0" max="200" value="50">
+              <label class="form-label d-flex justify-content-between align-items-center mb-1 mt-3">
+                <span>
+                  Loss-rate delta (bps)
+                  <a href="#" class="info-icon text-muted ms-1" data-bs-toggle="tooltip"
+                    title="Assumed increase in credit losses due to riskier borrower mix or weaker underwriting as volume grows."
+                    onclick="return false;">ⓘ</a>
+                </span>
+                <span class="text-muted small" id="lossDeltaVal">—</span>
+              </label>
+              <div class="helptext mb-2">Factors in adverse selection / risk creep from pushing growth.</div>
+              <input id="lossDelta" type="range" class="form-range" min="0" max="150" value="25">
+              <label class="form-label d-flex justify-content-between align-items-center mb-1 mt-3">
+                <span>
+                  Avg loan size
+                  <a href="#" class="info-icon text-muted ms-1" data-bs-toggle="tooltip"
+                    title="Average funded loan amount. Affects revenue and losses proportionally; bigger loans increase both."
+                    onclick="return false;">ⓘ</a>
+                </span>
+                <span class="text-muted small" id="avgLoanVal">—</span>
+              </label>
+              <div class="helptext mb-2">Factors in introducer concentration and market trend</div>
+              <input id="avgLoan" type="range" class="form-range" min="5000" max="40000" value="10000" step="500">
+            </div>
+          </div>
+          <div class="card shadow-sm mt-3" id="guardrailsCard">
+            <div class="card-body">
+              <h5 class="card-title mb-1">
+                Risk & Policy Guardrails
+                <a href="#" class="info-icon text-muted ms-1" data-bs-toggle="tooltip"
+                  title="Guardrails are pre-agreed thresholds. If breached, the proposal needs redesign or explicit risk acceptance."
+                  onclick="return false;">ⓘ</a>
+              </h5>
+              <div class="text-muted small mb-3">Simple thresholds that define what’s acceptable vs out of bounds based
+                on company policy.</div>
+              <ul class="list-group list-group-flush">
+                <li class="list-group-item px-0">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span>
+                      Prob(loss) ≤ <span class="fw-semibold">15.0%</span>
+                      <a href="#" class="info-icon text-muted ms-1" data-bs-toggle="tooltip"
+                        title="Probability the scenario produces negative profit. Lower is better; this encodes risk appetite."
+                        onclick="return false;">ⓘ</a>
+                    </span>
+                    <span class="badge text-bg-secondary" id="grProbLoss">—</span>
+                  </div>
+                  <div class="helptext">Limits how often we’re willing to lose money under uncertainty.</div>
+                </li>
+                <li class="list-group-item px-0">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span>
+                      P10 profit ≥ <span class="fw-semibold">$0</span>
+                      <a href="#" class="info-icon text-muted ms-1" data-bs-toggle="tooltip"
+                        title="If breached, more than 10% of future simulations are in breach of the profit guardrail. Use P10 to understand how the strategy performs in plausible but adverse conditions, not in extreme tail events."
+                        onclick="return false;">ⓘ</a>
+                    </span>
+                    <span class="badge text-bg-secondary" id="grP10">—</span>
+                  </div>
+                  <div class="helptext">Profit level that is exceeded in 90% of simulated futures and only missed in the
+                    worst 10%.</div>
+                </li>
+                <li class="list-group-item px-0">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span>
+                      Incentive bps ≤ <span class="fw-semibold">120</span>
+                      <a href="#" class="info-icon text-muted ms-1" data-bs-toggle="tooltip"
+                        title="Policy has set a hard limit of 120bps for all introducer incentives"
+                        onclick="return false;">ⓘ</a>
+                    </span>
+                    <span class="badge text-bg-secondary" id="grIncentive">—</span>
+                  </div>
+                  <div class="helptext">Flags when incentive cost is set too high</div>
+                </li>
+                <li class="list-group-item px-0">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span>
+                      Loss-rate delta ≤ <span class="fw-semibold">$0</span>
+                      <a href="#" class="info-icon text-muted ms-1" data-bs-toggle="tooltip"
+                        title="Policy has set a maximum loss delta of 80bps regardless of potential"
+                        onclick="return false;">ⓘ</a>
+                    </span>
+                    <span class="badge text-bg-secondary" id="grLossDelta">—</span>
+                  </div>
+                  <div class="helptext">Flags when expected loss-rate is too high</div>
+                </li>
+              </ul>
+              <div class="mt-3 text-muted small">
+                Guardrails are defaults for demo purposes; align to real risk appetite and funding constraints.
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- KPIs -->
+        <div class="col-lg-9">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <div class="text-muted small">Expected profit</div>
+                  <div class="h4 fw-bold mb-0" id="kpiProfit">$—</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <div class="text-muted small">Downside (P10)</div>
+                  <div class="h4 fw-bold mb-0" id="kpiP10">$—</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <div class="text-muted small">Prob(loss)</div>
+                  <div class="h4 fw-bold mb-0" id="kpiProbLoss">—%</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <div class="text-muted small">Originations</div>
+                  <div class="h4 fw-bold mb-0" id="kpiOriginations">—</div>
+                </div>
+              </div>
+            </div>
+            <!-- Charts -->
+            <div class="col-12">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <h5 class="card-title mb-1">Profit Distribution</h5>
+                      <div class="text-muted small">
+                        Focus on the downside tail: healthy scenarios have most outcomes above $0 and limited left-tail
+                        risk.
+                      </div>
+                      <a class="small text-decoration-none d-inline-flex mt-2" data-bs-toggle="collapse"
+                        href="#howProfit" role="button" aria-expanded="false">
+                        How to read this →
+                      </a>
+                    </div>
+                    <div class="collapse mt-3" id="howProfit">
+                      <div class="border rounded p-3 bg-light">
+                        <div class="kicker mb-2">Quick intuition</div>
+                        <ul class="mb-0 small">
+                          <li><span class="fw-semibold">Right-shifted</span> distribution = better economics.</li>
+                          <li><span class="fw-semibold">Long left tail</span> = higher downside risk (bad surprises).
+                          </li>
+                          <li><span class="fw-semibold">Prob(loss)</span> and <span class="fw-semibold">P10</span> help
+                            summarise tail risk.</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="profitChart" style="height: 320px;"></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-start"></div>
+                  <div>
+                    <h5 class="card-title mb-1">Trade Offs</h5>
+                    <div class="text-muted small">
+                      Monte Carlo approximation of outcomes from the current scenario settings.
+                    </div>
+                    <a class="small text-decoration-none" data-bs-toggle="collapse" href="#howTradeoffs" role="button"
+                      aria-expanded="false">
+                      How to read this →
+                    </a>
+                  </div>
+                  <div class="collapse mt-3" id="howTradeoffs">
+                    <div class="border rounded p-3 bg-light">
+                      <div class="kicker mb-2">Quick intuition</div>
+                      <ul class="mb-0 small">
+                        <li><span class="fw-semibold">flat/declining curve</span> = risk isn’t paid for.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                <div id="tradeoffChart" style="height: 320px;"></div>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="card shadow-sm" id="decisionCard">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <h5 class="card-title mb-1">Decision summary</h5>
+                      <div class="text-muted small">Auto-generated from current levers and KPIs.</div>
+                    </div>
+                    <span class="badge text-bg-secondary" id="decisionBadge">Draft</span>
+                  </div>
+                  <p class="mt-3 mb-2" id="decisionText">
+                    —
+                  </p>
+                  <div class="text-muted small">
+                    <span class="fw-semibold">Suggested action:</span>
+                    <span id="decisionAction">—</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Model limitations -->
+            <div class="col-12">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <h5 class="card-title mb-1">What this model does not do (yet)</h5>
+                  <div class="text-muted small mb-3">Included to make assumptions explicit and decision risks visible.
+                  </div>
+                  <ul class="mb-0">
+                    <li>No behavioural feedback loops (e.g., channel mix and borrower quality changing over time).</li>
+                    <li>Loss distribution is simplified; tail risk and correlation are not fully modelled.</li>
+                    <li>No capital, liquidity, or operational capacity constraints included.</li>
+                    <li>Assumes pricing, funding costs, and collections effectiveness remain stable.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </main>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <script type="module" src="/js/cockpit.js"></script>
+  <!-- pull tooltip -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+      tooltipTriggerList.map((el) => new bootstrap.Tooltip(el));
+    });
+  </script>
 
 </body>
-</html>
 
+</html>
