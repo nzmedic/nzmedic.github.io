@@ -10,11 +10,7 @@ from sklearn.linear_model import Ridge
 from sklearn.preprocessing import StandardScaler
 
 from .config import BASE_FEATURE_COLS
-
-def _one_hot(df: pd.DataFrame) -> pd.DataFrame:
-    X = df[BASE_FEATURE_COLS].copy()
-    X = pd.get_dummies(X, columns=["introducer"], drop_first=True)
-    return X
+from .feature_utils import one_hot_base_features
 
 def explain_risk_model_global_local(
     hazard_model_bundle: Dict,
@@ -22,10 +18,21 @@ def explain_risk_model_global_local(
     model_kind: str = "graduation_risk",
     top_k: int = 8
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    X = _one_hot(df_for_explain).reindex(columns=hazard_model_bundle["columns"], fill_value=0)
+    """Generate global and local explanations for the risk model.
+
+    Args:
+        hazard_model_bundle: Fitted hazard model bundle.
+        df_for_explain: Data to explain at a snapshot.
+        model_kind: Label for the output rows.
+        top_k: Number of top features per record.
+
+    Returns:
+        Tuple of (global_df, local_df) explanation DataFrames.
+    """
+    X = one_hot_base_features(df_for_explain).reindex(columns=hazard_model_bundle["columns"], fill_value=0)
 
     sample = df_for_explain.sample(n=min(200, len(df_for_explain)), random_state=11).copy()
-    Xs = _one_hot(sample).reindex(columns=hazard_model_bundle["columns"], fill_value=0)
+    Xs = one_hot_base_features(sample).reindex(columns=hazard_model_bundle["columns"], fill_value=0)
 
     # Try SHAP for tree
     use_shap = False
@@ -109,12 +116,17 @@ def explain_risk_model_global_local(
     return global_df, local_df
 
 def explain_uplift_via_surrogate(uplift_df: pd.DataFrame, top_k: int = 8) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """
-    Train a simple surrogate model on ite_retention to produce stable global + local reason codes.
+    """Explain uplift using a surrogate model for stable reason codes.
+
+    Args:
+        uplift_df: Uplift dataset with ITE estimates.
+        top_k: Number of top features per record.
+
+    Returns:
+        Tuple of (global_df, local_df) explanation DataFrames.
     """
     d = uplift_df.copy()
-    X = d[BASE_FEATURE_COLS].copy()
-    X = pd.get_dummies(X, columns=["introducer"], drop_first=True)
+    X = one_hot_base_features(d)
     y = d["ite_retention"].values
 
     scaler = StandardScaler(with_mean=False)

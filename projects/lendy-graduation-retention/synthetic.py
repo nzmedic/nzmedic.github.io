@@ -8,6 +8,14 @@ from typing import Tuple
 from .config import Scenario
 
 def sigmoid(x):
+    """Compute a sigmoid transformation.
+
+    Args:
+        x: Input value or array.
+
+    Returns:
+        Sigmoid-transformed value.
+    """
     return 1.0 / (1.0 + np.exp(-x))
 
 def generate_synthetic_portfolio(
@@ -17,9 +25,18 @@ def generate_synthetic_portfolio(
     months_max: int = 60,
     seed: int = 7
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """
-    Returns customers_df, loans_df, perf_df
-    perf_df has one row per loan-month up to closure (graduation or scheduled close).
+    """Generate synthetic customers, loans, and performance history.
+
+    Args:
+        scenario: Scenario configuration to apply.
+        n_customers: Number of customers to simulate.
+        loans_per_customer_mean: Average loans per customer (Poisson mean).
+        months_max: Maximum months to simulate for each loan.
+        seed: Random seed for reproducibility.
+
+    Returns:
+        Tuple of (customers_df, loans_df, perf_df). The performance DataFrame has
+        one row per loan-month until graduation or scheduled close.
     """
     rng = np.random.default_rng(seed + abs(hash(scenario.name)) % 10_000)
 

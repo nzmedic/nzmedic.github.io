@@ -2,9 +2,14 @@ import pandas as pd
 import numpy as np
 
 def estimate_defaults_and_losses_by_segment(segments: pd.DataFrame, horizon_years: float = 1.0) -> pd.DataFrame:
-    """
-    Convert annual PD to horizon PD (simple linear approx for MVP).
-    For a more realistic approach later: convert using survival / hazard.
+    """Estimate default and loss metrics for each segment.
+
+    Args:
+        segments: Segment-level portfolio data with PD/LGD assumptions.
+        horizon_years: Horizon in years for default conversion.
+
+    Returns:
+        DataFrame with expected default balances, losses, and counts.
     """
     out = segments.copy()
     out["pd_horizon"] = (out["pd_annual_scn"] * horizon_years).clip(0, 1)
@@ -14,8 +19,14 @@ def estimate_defaults_and_losses_by_segment(segments: pd.DataFrame, horizon_year
     return out
 
 def allocate_losses_over_time(segments_losses: pd.DataFrame, month_timing: pd.DataFrame) -> pd.DataFrame:
-    """
-    Allocates expected losses and default counts over months using timing shares.
+    """Allocate expected losses and defaults over time using timing shares.
+
+    Args:
+        segments_losses: Segment-level loss estimates.
+        month_timing: Month-level timing curve shares.
+
+    Returns:
+        DataFrame with monthly expected losses and defaults.
     """
     base = segments_losses.copy()
     timing = month_timing.copy()

@@ -1,9 +1,20 @@
 import { money, percent } from "/js/ui.js";
+import {
+    fetchJson,
+    fetchText,
+    number,
+    parseCSV,
+    qs,
+    setText,
+} from "/cockpits/shared/cockpit-utils.js";
 
-const $ = (sel) => document.querySelector(sel);
+const scenarioSelect = qs("#scenarioSelect");
 
-const scenarioSelect = $("#scenarioSelect");
-
+/**
+ * Build output paths for a given scenario.
+ * @param {string} scenario - Scenario name used in output filenames.
+ * @returns {{kpis: string, byProduct: string, overTime: string}} Output URLs.
+ */
 function paths(scenario) {
     return {
         kpis: `/cockpits/lendy-loss-risk/outputs/kpis_${scenario}.json`,
@@ -12,42 +23,10 @@ function paths(scenario) {
     };
 }
 
-// Minimal numeric formatting for non-money counts
-function number(x) {
-    const n = Number(x);
-    if (!Number.isFinite(n)) return "—";
-    return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
-}
-
-// Minimal CSV parsing (controlled outputs)
-function parseCSV(text) {
-    const lines = text.trim().split(/\r?\n/).filter(Boolean);
-    if (!lines.length) return [];
-    const headers = lines[0].split(",").map(h => h.trim());
-    return lines.slice(1).map(line => {
-        const cols = line.split(",").map(c => c.trim());
-        const row = {};
-        headers.forEach((h, i) => row[h] = cols[i] ?? "");
-        return row;
-    });
-}
-
-async function fetchJson(url) {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) throw new Error(`Failed to load ${url} (${res.status})`);
-    return await res.json();
-}
-
-async function fetchText(url) {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) throw new Error(`Failed to load ${url} (${res.status})`);
-    return await res.text();
-}
-
-function setText(sel, v) {
-    $(sel).textContent = v;
-}
-
+/**
+ * Render KPI values from the JSON payload.
+ * @param {Record<string, number>} k - KPI payload for the selected scenario.
+ */
 function renderKpis(k) {
     // Expected JSON schema:
     // balance, expected_loss, loss_rate, expected_default_balance, expected_default_count
@@ -64,8 +43,12 @@ function renderKpis(k) {
     setText("#kpiDefaultCountHelp", "E[# defaults]");
 }
 
+/**
+ * Render the "loss by product" table.
+ * @param {Array<Record<string, string>>} rows - Parsed CSV rows.
+ */
 function renderLossByProduct(rows) {
-    const tbody = $("#tblLossByProduct tbody");
+    const tbody = qs("#tblLossByProduct tbody");
     tbody.innerHTML = "";
 
     if (!rows.length) {
@@ -89,8 +72,12 @@ function renderLossByProduct(rows) {
     }
 }
 
+/**
+ * Render the "loss over time" table.
+ * @param {Array<Record<string, string>>} rows - Parsed CSV rows.
+ */
 function renderLossOverTime(rows) {
-    const tbody = $("#tblLossOverTime tbody");
+    const tbody = qs("#tblLossOverTime tbody");
     tbody.innerHTML = "";
 
     if (!rows.length) {
@@ -132,22 +119,31 @@ function renderLossOverTime(rows) {
     }
 }
 
+/**
+ * Update download links for the current scenario.
+ * @param {string} scenario - Scenario name used in output filenames.
+ */
 function setDownloadLinks(scenario) {
     const p = paths(scenario);
 
-    $("#dlLossByProduct").href = p.byProduct;
-    $("#dlLossOverTime").href = p.overTime;
+    qs("#dlLossByProduct").href = p.byProduct;
+    qs("#dlLossOverTime").href = p.overTime;
 
-    $("#dlKpisJson").href = p.kpis;
-    $("#dlLossByProductCsv2").href = p.byProduct;
-    $("#dlLossOverTimeCsv2").href = p.overTime;
+    qs("#dlKpisJson").href = p.kpis;
+    qs("#dlLossByProductCsv2").href = p.byProduct;
+    qs("#dlLossOverTimeCsv2").href = p.overTime;
 }
 
+/**
+ * Load scenario outputs and render tables/metrics.
+ * @param {string} scenario - Scenario name to load.
+ * @returns {Promise<void>} Resolves after rendering.
+ */
 async function loadScenario(scenario) {
     setDownloadLinks(scenario);
 
-    $("#tblLossByProduct tbody").innerHTML = `<tr><td colspan="5" class="text-muted">Loading…</td></tr>`;
-    $("#tblLossOverTime tbody").innerHTML = `<tr><td colspan="4" class="text-muted">Loading…</td></tr>`;
+    qs("#tblLossByProduct tbody").innerHTML = `<tr><td colspan="5" class="text-muted">Loading…</td></tr>`;
+    qs("#tblLossOverTime tbody").innerHTML = `<tr><td colspan="4" class="text-muted">Loading…</td></tr>`;
 
     try {
         const p = paths(scenario);
@@ -168,9 +164,9 @@ async function loadScenario(scenario) {
         setText("#kpiDefaultBal", "—");
         setText("#kpiDefaultCount", "—");
 
-        $("#tblLossByProduct tbody").innerHTML =
+        qs("#tblLossByProduct tbody").innerHTML =
             `<tr><td colspan="5" class="text-danger">Failed to load scenario outputs. Check console + file paths.</td></tr>`;
-        $("#tblLossOverTime tbody").innerHTML =
+        qs("#tblLossOverTime tbody").innerHTML =
             `<tr><td colspan="4" class="text-danger">Failed to load scenario outputs. Check console + file paths.</td></tr>`;
     }
 }

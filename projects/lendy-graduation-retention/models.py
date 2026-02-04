@@ -11,13 +11,34 @@ from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import roc_auc_score
 
 from .config import BASE_FEATURE_COLS
+from .feature_utils import one_hot_base_features
 
 def _one_hot(df: pd.DataFrame, columns: List[str]) -> pd.DataFrame:
-    X = df[columns].copy()
-    X = pd.get_dummies(X, columns=["introducer"], drop_first=True)
-    return X
+    """One-hot encode categorical columns for modeling.
+
+    Args:
+        df: Input DataFrame containing feature columns.
+        columns: Feature column names to include before encoding.
+
+    Returns:
+        DataFrame with one-hot encoded categorical features.
+    """
+    if columns != BASE_FEATURE_COLS:
+        X = df[columns].copy()
+        X = pd.get_dummies(X, columns=["introducer"], drop_first=True)
+        return X
+    return one_hot_base_features(df)
 
 def fit_hazard_models(train_df: pd.DataFrame, valid_df: pd.DataFrame) -> Dict[str, Dict]:
+    """Fit baseline and gradient boosting hazard models.
+
+    Args:
+        train_df: Training dataset with feature columns and event labels.
+        valid_df: Validation dataset for scaling and alignment.
+
+    Returns:
+        Dictionary of fitted model bundles.
+    """
     X_train = _one_hot(train_df, BASE_FEATURE_COLS)
     y_train = train_df["event"].values.astype(int)
     X_valid = _one_hot(valid_df, BASE_FEATURE_COLS).reindex(columns=X_train.columns, fill_value=0)
@@ -38,6 +59,15 @@ def fit_hazard_models(train_df: pd.DataFrame, valid_df: pd.DataFrame) -> Dict[st
     }
 
 def predict_hazard(model_bundle: Dict, df: pd.DataFrame) -> np.ndarray:
+    """Predict per-period hazard probabilities.
+
+    Args:
+        model_bundle: Model bundle returned by ``fit_hazard_models``.
+        df: DataFrame of observations to score.
+
+    Returns:
+        Array of hazard probabilities clipped to (0, 1).
+    """
     X = _one_hot(df, BASE_FEATURE_COLS).reindex(columns=model_bundle["columns"], fill_value=0)
     if model_bundle["type"] == "logit":
         Xs = model_bundle["scaler"].transform(X)
@@ -53,6 +83,17 @@ def loan_level_survival_summary(
     asof_month: int,
     horizons=(3, 6, 12)
 ) -> pd.DataFrame:
+    """Summarize loan-level survival and graduation probabilities.
+
+    Args:
+        perf_df: Performance data with monthly snapshots.
+        hazard_model_bundle: Fitted hazard model bundle.
+        asof_month: Snapshot month for evaluation.
+        horizons: Horizons (months) to compute cumulative graduation probabilities.
+
+    Returns:
+        DataFrame with per-loan probabilities, expected time, and risk deciles.
+    """
     snap = perf_df[(perf_df["month_asof"] == asof_month) & (perf_df["balance"] > 0)].copy()
     max_forward = max(24, max(horizons))
 
@@ -126,6 +167,14 @@ def loan_level_survival_summary(
 # --- uplift / causal ---
 
 def fit_propensity_model(train_df: pd.DataFrame) -> Dict:
+    """Fit a propensity model for treatment assignment.
+
+    Args:
+        train_df: Training dataset with treatment labels.
+
+    Returns:
+        Model bundle containing fitted estimator and column ordering.
+    """
     X = _one_hot(train_df, BASE_FEATURE_COLS)
     y = train_df["treated"].values.astype(int)
     m = GradientBoostingClassifier(n_estimators=250, learning_rate=0.05, max_depth=3, subsample=0.8)
@@ -133,11 +182,29 @@ def fit_propensity_model(train_df: pd.DataFrame) -> Dict:
     return {"model": m, "columns": X.columns.tolist()}
 
 def predict_propensity(bundle: Dict, df: pd.DataFrame) -> np.ndarray:
+    """Predict propensity scores for treatment assignment.
+
+    Args:
+        bundle: Propensity model bundle.
+        df: DataFrame of observations to score.
+
+    Returns:
+        Array of propensity scores clipped to [0.02, 0.98].
+    """
     X = _one_hot(df, BASE_FEATURE_COLS).reindex(columns=bundle["columns"], fill_value=0)
     p = bundle["model"].predict_proba(X)[:, 1]
     return np.clip(p, 0.02, 0.98)
 
 def fit_t_learner_outcome_models(train_df: pd.DataFrame, outcome_col: str = "retained_within_h") -> Dict:
+    """Fit treatment and control outcome models for a T-learner.
+
+    Args:
+        train_df: Training dataset with treatment and outcome columns.
+        outcome_col: Outcome column name.
+
+    Returns:
+        Model bundle with treatment and control estimators.
+    """
     X = _one_hot(train_df, BASE_FEATURE_COLS)
     y = train_df[outcome_col].values.astype(int)
     t = train_df["treated"].values.astype(int)
@@ -153,12 +220,32 @@ def fit_t_learner_outcome_models(train_df: pd.DataFrame, outcome_col: str = "ret
     return {"mt": mt, "mc": mc, "columns": X.columns.tolist()}
 
 def predict_outcome_models(bundle: Dict, df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
+    """Predict treatment and control outcomes.
+
+    Args:
+        bundle: Outcome model bundle.
+        df: DataFrame of observations to score.
+
+    Returns:
+        Tuple of (mu1, mu0) outcome probabilities.
+    """
     X = _one_hot(df, BASE_FEATURE_COLS).reindex(columns=bundle["columns"], fill_value=0)
     mu1 = bundle["mt"].predict_proba(X)[:, 1]
     mu0 = bundle["mc"].predict_proba(X)[:, 1]
     return np.clip(mu1, 1e-3, 1-1e-3), np.clip(mu0, 1e-3, 1-1e-3)
 
 def doubly_robust_ite_retention(df: pd.DataFrame, prop: Dict, outm: Dict, outcome_col: str = "retained_within_h") -> pd.DataFrame:
+    """Estimate individual treatment effects using a doubly robust estimator.
+
+    Args:
+        df: Input dataset with treatment and outcome columns.
+        prop: Propensity model bundle.
+        outm: Outcome model bundle.
+        outcome_col: Outcome column name.
+
+    Returns:
+        DataFrame with propensity, outcome predictions, and ITE estimates.
+    """
     d = df.copy()
     e = predict_propensity(prop, d)
     mu1, mu0 = predict_outcome_models(outm, d)
@@ -177,6 +264,14 @@ def doubly_robust_ite_retention(df: pd.DataFrame, prop: Dict, outm: Dict, outcom
     return d
 
 def segment_customers(df: pd.DataFrame) -> pd.DataFrame:
+    """Assign behavioral segments based on baseline retention and ITE.
+
+    Args:
+        df: DataFrame containing mu0_retention and ite_retention.
+
+    Returns:
+        DataFrame with a new segment column.
+    """
     d = df.copy()
     base_ret = d["mu0_retention"].values
     ite = d["ite_retention"].values
@@ -199,6 +294,16 @@ def segment_customers(df: pd.DataFrame) -> pd.DataFrame:
 # --- evaluation ---
 
 def survival_eval_metrics(perf_df: pd.DataFrame, hazard_bundle: Dict, asof_month: int) -> pd.DataFrame:
+    """Compute evaluation metrics for survival models across horizons.
+
+    Args:
+        perf_df: Performance data with outcomes.
+        hazard_bundle: Fitted hazard model bundle.
+        asof_month: Snapshot month for evaluation.
+
+    Returns:
+        DataFrame of AUC and calibration metrics.
+    """
     horizons = [3, 6, 12]
     snap = perf_df[(perf_df["month_asof"] == asof_month) & (perf_df["balance"] > 1_000)].copy()
     df = perf_df.sort_values(["loan_id", "month_asof"]).copy()
@@ -227,12 +332,28 @@ def survival_eval_metrics(perf_df: pd.DataFrame, hazard_bundle: Dict, asof_month
     return pd.DataFrame(metrics, columns=["model_name", "metric_name", "metric_value", "notes"])
 
 def naive_vs_adjusted_treatment_effect(uplift_df: pd.DataFrame) -> Tuple[float, float]:
+    """Compare naive and adjusted treatment effect estimates.
+
+    Args:
+        uplift_df: Uplift dataset with treated flags and ITE estimates.
+
+    Returns:
+        Tuple of (naive_effect, adjusted_effect).
+    """
     d = uplift_df.copy()
     naive = d.loc[d["treated"] == 1, "retained_within_h"].mean() - d.loc[d["treated"] == 0, "retained_within_h"].mean()
     adjusted = d["ite_retention"].mean()
     return float(naive), float(adjusted)
 
 def compute_uplift_curve(uplift_df: pd.DataFrame) -> Tuple[pd.DataFrame, float]:
+    """Compute a cumulative uplift curve and AUUC-like metric.
+
+    Args:
+        uplift_df: Uplift dataset with ITE estimates.
+
+    Returns:
+        Tuple of (curve DataFrame, AUUC value).
+    """
     d = uplift_df.sort_values("ite_retention", ascending=False).reset_index(drop=True).copy()
     d["inc"] = d["ite_retention"].clip(-0.25, 0.40)
     d["cum_inc"] = d["inc"].cumsum()
@@ -245,6 +366,17 @@ def compute_uplift_curve(uplift_df: pd.DataFrame) -> Tuple[pd.DataFrame, float]:
     return d[["n", "cum_inc", "random_cum", "uplift_over_random"]], auuc
 
 def uplift_frontier(uplift_df: pd.DataFrame, budget_type: str, budget_values: List[float], horizon_months: int = 12):
+    """Compute an uplift frontier over budgets.
+
+    Args:
+        uplift_df: Uplift dataset with offer assignments.
+        budget_type: "count" or "cost" budget constraint type.
+        budget_values: Budget values to evaluate.
+        horizon_months: Horizon in months for value calculations.
+
+    Returns:
+        Tuple of (frontier DataFrame, scored DataFrame).
+    """
     d = uplift_df.copy()
     d["incremental_retained_balance"] = d["balance"] * d["ite_retention"].clip(0, 1)
 
