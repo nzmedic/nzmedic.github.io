@@ -1,15 +1,22 @@
 import { money, percent } from "/js/ui.js";
+import {
+    fetchText,
+    fixed,
+    number,
+    parseCSV,
+    qs,
+    setText,
+    toNum,
+} from "/cockpits/shared/cockpit-utils.js";
 
-const $ = (sel) => document.querySelector(sel);
+const scenarioSelect = qs("#scenarioSelect");
+const offerBpsSelect = qs("#offerBpsSelect");
+const loanSearch = qs("#loanSearch");
 
-const scenarioSelect = $("#scenarioSelect");
-const offerBpsSelect = $("#offerBpsSelect");
-const loanSearch = $("#loanSearch");
-
-const budgetSlider = $("#budgetSlider");
-const budgetLabel = $("#budgetLabel");
-const budgetTypeCount = $("#budgetTypeCount");
-const budgetTypeCost = $("#budgetTypeCost");
+const budgetSlider = qs("#budgetSlider");
+const budgetLabel = qs("#budgetLabel");
+const budgetTypeCount = qs("#budgetTypeCount");
+const budgetTypeCost = qs("#budgetTypeCost");
 
 let selectedLoanId = null;
 
@@ -24,6 +31,12 @@ let cache = {
     explainLocal: [],
 };
 
+/**
+ * Build output paths for a given scenario.
+ * @param {string} scenario - Scenario name used in output filenames.
+ * @returns {{risk: string, uplift: string, frontier: string, metrics: string, explainGlobal: string, explainLocal: string}}
+ * Output URLs.
+ */
 function paths(scenario) {
     return {
         risk: `/cockpits/lendy-graduation-retention/outputs/graduation_risk_by_loan_${scenario}.csv`,
@@ -35,48 +48,17 @@ function paths(scenario) {
     };
 }
 
-function number(x) {
-    const n = Number(x);
-    if (!Number.isFinite(n)) return "—";
-    return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
-}
-function fixed(x, d = 2) {
-    const n = Number(x);
-    if (!Number.isFinite(n)) return "—";
-    return n.toFixed(d);
-}
-function toNum(x, fallback = 0) {
-    const n = Number(x);
-    return Number.isFinite(n) ? n : fallback;
-}
-
-// Minimal CSV parsing (controlled outputs; no quoted commas expected)
-function parseCSV(text) {
-    const lines = text.trim().split(/\r?\n/).filter(Boolean);
-    if (!lines.length) return [];
-    const headers = lines[0].split(",").map(h => h.trim());
-    return lines.slice(1).map(line => {
-        const cols = line.split(",").map(c => c.trim());
-        const row = {};
-        headers.forEach((h, i) => row[h] = cols[i] ?? "");
-        return row;
-    });
-}
-
-async function fetchText(url) {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) throw new Error(`Failed to load ${url} (${res.status})`);
-    return await res.text();
-}
-
-function setText(sel, v) {
-    $(sel).textContent = v;
-}
-
+/**
+ * Get the selected budget type from the UI.
+ * @returns {"count"|"cost"} Budget type.
+ */
 function getBudgetType() {
     return budgetTypeCost.checked ? "cost" : "count";
 }
 
+/**
+ * Sync the budget slider UI to the selected type.
+ */
 function syncBudgetUi() {
     const t = getBudgetType();
 
@@ -95,14 +77,18 @@ function syncBudgetUi() {
     }
 }
 
+/**
+ * Update download links for the current scenario.
+ * @param {string} scenario - Scenario name used in output filenames.
+ */
 function setDownloadLinks(scenario) {
     const p = paths(scenario);
-    $("#dlRiskCsv").href = p.risk;
-    $("#dlUpliftCsv").href = p.uplift;
-    $("#dlFrontierCsv").href = p.frontier;
-    $("#dlMetricsCsv").href = p.metrics;
-    $("#dlExplainGlobalCsv").href = p.explainGlobal;
-    $("#dlExplainLocalCsv").href = p.explainLocal;
+    qs("#dlRiskCsv").href = p.risk;
+    qs("#dlUpliftCsv").href = p.uplift;
+    qs("#dlFrontierCsv").href = p.frontier;
+    qs("#dlMetricsCsv").href = p.metrics;
+    qs("#dlExplainGlobalCsv").href = p.explainGlobal;
+    qs("#dlExplainLocalCsv").href = p.explainLocal;
 }
 
 /** Decision policy:
@@ -110,6 +96,11 @@ function setDownloadLinks(scenario) {
  * - keep ite > 0 and not do_not_disturb
  * - rank by incremental_nii
  * - apply budget (count or cost)
+ */
+/**
+ * Select target loans based on budget and offer settings.
+ * @param {Array<Record<string, string>>} upliftRows - Uplift rows for the scenario.
+ * @returns {Array<Record<string, string>>} Targeted loan rows.
  */
 function chooseTargets(upliftRows) {
     const bps = toNum(offerBpsSelect.value, 100);
@@ -137,6 +128,14 @@ function chooseTargets(upliftRows) {
     return chosen;
 }
 
+/**
+ * Compute headline insight metrics and update the UI.
+ * @param {Array<Record<string, string>>} riskRows - Risk rows for the scenario.
+ * @param {Array<Record<string, string>>} upliftRows - Uplift rows for the scenario.
+ * @param {Array<Record<string, string>>} chosen - Targeted loan rows.
+ * @returns {{expGrads: number, riskBal: number, retainedAum: number, incNii: number, roi: number|null}}
+ * Computed metrics.
+ */
 function computeInsights(riskRows, upliftRows, chosen) {
     const loans = riskRows.length;
 
@@ -190,6 +189,10 @@ function computeInsights(riskRows, upliftRows, chosen) {
     return { expGrads, riskBal, retainedAum, incNii, roi };
 }
 
+/**
+ * Render the uplift scatter plot.
+ * @param {Array<Record<string, string>>} upliftRows - Uplift rows for the scenario.
+ */
 function renderUpliftScatter(upliftRows) {
     const bps = toNum(offerBpsSelect.value, 100);
 
@@ -262,8 +265,13 @@ function renderUpliftScatter(upliftRows) {
     Plotly.newPlot("upliftScatter", traces, layout, { displayModeBar: false, responsive: true });
 }
 
+/**
+ * Render the targets table for the chosen loans.
+ * @param {Array<Record<string, string>>} chosen - Targeted loan rows.
+ * @param {Array<Record<string, string>>} riskRows - Risk rows for the scenario.
+ */
 function renderTargetsTable(chosen, riskRows) {
-    const tbody = $("#tblTargets tbody");
+    const tbody = qs("#tblTargets tbody");
     tbody.innerHTML = "";
 
     if (!chosen.length) {
@@ -302,9 +310,13 @@ function renderTargetsTable(chosen, riskRows) {
     }
 }
 
+/**
+ * Render local explainability details for the selected loan.
+ * @param {Array<Record<string, string>>} localRows - Local explainability rows.
+ */
 function renderLocalExplain(localRows, globalRows = []) {
-    const tbody = $("#tblLocalExplain tbody");
-    const label = $("#selectedLoanLabel");
+    const tbody = qs("#tblLocalExplain tbody");
+    const label = qs("#selectedLoanLabel");
 
     if (!selectedLoanId) {
         label.textContent = "Select a loan from the target list.";
@@ -361,6 +373,10 @@ function renderLocalExplain(localRows, globalRows = []) {
     }
 }
 
+/**
+ * Render the graduation risk histogram.
+ * @param {Array<Record<string, string>>} riskRows - Risk rows for the scenario.
+ */
 function renderRiskChart(riskRows) {
     const p12 = riskRows.map(r => toNum(r.prob_graduate_12m)).filter(v => Number.isFinite(v));
     const trace = {
@@ -380,6 +396,10 @@ function renderRiskChart(riskRows) {
     Plotly.newPlot("riskChart", [trace], layout, { displayModeBar: false, responsive: true });
 }
 
+/**
+ * Render the segment breakdown pie chart.
+ * @param {Array<Record<string, string>>} upliftRows - Uplift rows for the scenario.
+ */
 function renderSegmentChart(upliftRows) {
     const bps = toNum(offerBpsSelect.value, 100);
     const rows = upliftRows.filter(r => toNum(r.treatment_bps) === bps);
@@ -410,6 +430,10 @@ function renderSegmentChart(upliftRows) {
     Plotly.newPlot("segmentChart", [trace], layout, { displayModeBar: false, responsive: true });
 }
 
+/**
+ * Render the uplift frontier chart.
+ * @param {Array<Record<string, string>>} frontierRows - Frontier rows for the scenario.
+ */
 function renderFrontierChart(frontierRows) {
     const t = getBudgetType();
     const budgetValue = toNum(budgetSlider.value);
@@ -455,6 +479,10 @@ function renderFrontierChart(frontierRows) {
     Plotly.newPlot("frontierChart", [line, dot], layout, { displayModeBar: false, responsive: true });
 }
 
+/**
+ * Render headline model metrics.
+ * @param {Array<Record<string, string>>} metricsRows - Metrics rows for the scenario.
+ */
 function renderHeadlineMetrics(metricsRows) {
     // Use whatever exists; fall back gracefully.
     // Expect columns: scenario_name, model_name, metric_name, metric_value, notes
@@ -486,6 +514,9 @@ function renderHeadlineMetrics(metricsRows) {
     }
 }
 
+/**
+ * Render all cockpit visualizations and tables.
+ */
 function renderAll() {
     syncBudgetUi();
 
@@ -506,18 +537,29 @@ function renderAll() {
     renderHeadlineMetrics(cache.metrics);
 }
 
+/**
+ * Set the cockpit into a loading state.
+ */
 function setLoading() {
     setText("#recommendationLine", "Loading…");
     $("#tblTargets tbody").innerHTML = `<tr><td colspan="6" class="text-muted">Loading…</td></tr>`;
     $("#tblLocalExplain tbody").innerHTML = `<tr><td colspan="3" class="text-muted">No loan selected.</td></tr>`;
 }
 
+/**
+ * Set the cockpit into an error state.
+ */
 function setError() {
     setText("#recommendationLine", "Failed to load scenario outputs. Check console + file paths.");
     $("#tblTargets tbody").innerHTML =
         `<tr><td colspan="6" class="text-danger">Failed to load scenario outputs. Check console + file paths.</td></tr>`;
 }
 
+/**
+ * Load scenario outputs and render the cockpit.
+ * @param {string} scenario - Scenario name to load.
+ * @returns {Promise<void>} Resolves after rendering.
+ */
 async function loadScenario(scenario) {
     setLoading();
     setDownloadLinks(scenario);

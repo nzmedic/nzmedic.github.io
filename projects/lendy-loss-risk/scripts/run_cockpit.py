@@ -15,6 +15,7 @@ from src.reporting import summary_by_product, summary_total, monthly_view
 from src.plotter import plot_loss_by_product, plot_monthly_loss
 
 def main():
+    """Run the loss-risk cockpit pipeline and write outputs."""
     parser = argparse.ArgumentParser(description="Lendy sub-portfolio loss-risk cockpit (MVP)")
     parser.add_argument("--scenario", type=str, default="base", help="Scenario name from data/scenarios.csv")
     parser.add_argument("--horizon_months", type=int, default=36, help="Months to allocate timing across")

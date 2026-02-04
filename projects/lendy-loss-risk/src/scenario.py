@@ -1,6 +1,15 @@
 import pandas as pd
 
 def get_scenario(scenarios: pd.DataFrame, scenario_name: str) -> dict:
+    """Extract scenario multipliers from a scenario table.
+
+    Args:
+        scenarios: Scenario configuration DataFrame.
+        scenario_name: Scenario name to select.
+
+    Returns:
+        Scenario configuration dictionary.
+    """
     row = scenarios.loc[scenarios["scenario_name"] == scenario_name]
     if row.empty:
         raise ValueError(f"Unknown scenario '{scenario_name}'. Available: {scenarios['scenario_name'].tolist()}")
@@ -13,6 +22,15 @@ def get_scenario(scenarios: pd.DataFrame, scenario_name: str) -> dict:
     }
 
 def apply_scenario_to_segments(segments: pd.DataFrame, sc: dict) -> pd.DataFrame:
+    """Apply PD/LGD multipliers to segment metrics.
+
+    Args:
+        segments: Segment-level portfolio data.
+        sc: Scenario configuration dictionary.
+
+    Returns:
+        DataFrame with scenario-adjusted PD/LGD values.
+    """
     out = segments.copy()
     out["scenario_name"] = sc["scenario_name"]
     out["pd_annual_scn"] = (out["annual_probability_of_default"] * sc["pd_multiplier"]).clip(0, 1)
@@ -20,9 +38,15 @@ def apply_scenario_to_segments(segments: pd.DataFrame, sc: dict) -> pd.DataFrame
     return out
 
 def apply_timing_acceleration(month_timing: pd.DataFrame, sc: dict, horizon_months: int) -> pd.DataFrame:
-    """
-    A simple acceleration: move probability mass earlier by scaling month index,
-    then re-binning to integer months.
+    """Accelerate timing curves by shifting probability mass earlier.
+
+    Args:
+        month_timing: Month-level timing curve.
+        sc: Scenario configuration dictionary with timing_acceleration.
+        horizon_months: Maximum horizon month.
+
+    Returns:
+        DataFrame with adjusted month timing shares.
     """
     out = month_timing.copy()
     out["adj_month"] = (out["months_since_origination"] / sc["timing_acceleration"]).round().astype(int)

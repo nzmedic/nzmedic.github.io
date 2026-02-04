@@ -10,7 +10,18 @@ const state = {
   avg_loan: 10000
 };
 
-// helper function. Provides decision guidence based on lever values
+/**
+ * Provide a decision recommendation based on guardrails.
+ * @param {object} state - Current lever settings.
+ * @param {number} state.uplift_pct - Origination uplift percentage.
+ * @param {number} state.incentive_bps - Incentive basis points.
+ * @param {number} state.loss_delta_bps - Loss-rate delta in basis points.
+ * @param {number} state.avg_loan - Average loan size.
+ * @param {object} out - Model outputs.
+ * @param {number} out.probLoss - Probability of loss.
+ * @param {number} out.p10 - 10th percentile profit.
+ * @returns {{badge: string, badgeStatus: string, text: string, action: string}} Decision summary.
+ */
 function decisionLogic(state, out) {
   // Guardrails (demo defaults)
   const GR = {
@@ -66,7 +77,9 @@ function decisionLogic(state, out) {
   };
 }
 
-
+/**
+ * Bind DOM elements and attach event listeners.
+ */
 function bind() {
   // sliders
   els.uplift = document.getElementById("uplift");
@@ -114,6 +127,9 @@ function bind() {
   els.avgLoan.addEventListener("input", () => { state.avg_loan = Number(els.avgLoan.value); render(); });
 }
 
+/**
+ * Render the cockpit KPIs, guardrails, and charts.
+ */
 function render() {
   if (!window.Plotly) {
     console.error("Plotly not found. Check plotly script tag is loading.");

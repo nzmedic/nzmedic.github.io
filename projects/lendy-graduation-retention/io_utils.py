@@ -25,6 +25,11 @@ def repo_root() -> Path:
 
 
 def cockpit_outputs_dir() -> str:
+    """Return (and create) the cockpit outputs directory path.
+
+    Returns:
+        Output directory path as a string.
+    """
     out = repo_root() / "cockpits" / "lendy-graduation-retention" / "outputs"
     out.mkdir(parents=True, exist_ok=True)
     return str(out)
@@ -40,6 +45,21 @@ def write_outputs(
     explain_global: pd.DataFrame,
     explain_local: pd.DataFrame
 ) -> Dict[str, str]:
+    """Write scenario outputs to disk and return file paths.
+
+    Args:
+        out_dir: Output directory.
+        scenario_name: Scenario name used in filenames.
+        risk_by_loan: Risk-by-loan DataFrame.
+        uplift_by_loan: Uplift-by-loan DataFrame.
+        model_metrics: Model metrics DataFrame.
+        frontier: Frontier DataFrame.
+        explain_global: Global explainability DataFrame.
+        explain_local: Local explainability DataFrame.
+
+    Returns:
+        Dictionary mapping output identifiers to file paths.
+    """
     # Ensure the output folder exists even if out_dir was passed in
     Path(out_dir).mkdir(parents=True, exist_ok=True)
 

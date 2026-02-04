@@ -3,6 +3,16 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 def plot_loss_by_product(summary_prod: pd.DataFrame, outdir: Path, scenario_name: str) -> Path:
+    """Plot expected loss by product for a scenario.
+
+    Args:
+        summary_prod: Product-level summary DataFrame.
+        outdir: Directory to save the plot.
+        scenario_name: Scenario name to filter.
+
+    Returns:
+        Path to the saved plot image.
+    """
     df = summary_prod[summary_prod["scenario_name"] == scenario_name].copy()
     df = df.sort_values("expected_loss", ascending=False)
 
@@ -18,6 +28,16 @@ def plot_loss_by_product(summary_prod: pd.DataFrame, outdir: Path, scenario_name
     return path
 
 def plot_monthly_loss(monthly: pd.DataFrame, outdir: Path, scenario_name: str) -> Path:
+    """Plot expected loss over time for a scenario.
+
+    Args:
+        monthly: Monthly loss DataFrame.
+        outdir: Directory to save the plot.
+        scenario_name: Scenario name to filter.
+
+    Returns:
+        Path to the saved plot image.
+    """
     df = monthly[monthly["scenario_name"] == scenario_name].copy()
     df = df.groupby("months_since_origination", as_index=False)["expected_loss_month"].sum()
 

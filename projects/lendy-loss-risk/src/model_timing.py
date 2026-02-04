@@ -1,9 +1,14 @@
 import pandas as pd
 
 def expand_timing_to_months(timing_curve: pd.DataFrame, horizon_months: int) -> pd.DataFrame:
-    """
-    Expands bucketed timing curve into month-level shares across horizon_months.
-    Each bucket share is spread uniformly across its months.
+    """Expand bucketed timing curve into monthly shares.
+
+    Args:
+        timing_curve: Timing curve DataFrame with bucket ranges.
+        horizon_months: Maximum months to expand.
+
+    Returns:
+        DataFrame with month-level share_of_defaults_month.
     """
     rows = []
     for _, r in timing_curve.iterrows():
