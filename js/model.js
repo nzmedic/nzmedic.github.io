@@ -1,6 +1,6 @@
 // js/model.js
-// Lightweight, deterministic "toy" model for Day 1 interactivity.
-// Swap this later for precomputed Monte Carlo outputs or a real JS sim.
+// Lightweight, deterministic model for V1 interactivity.
+// TODO: Swap this later for precomputed Monte Carlo outputs or a real JS sim.
 
 export function computeOutputs(state) {
   // Inputs

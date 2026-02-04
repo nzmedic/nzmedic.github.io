@@ -170,10 +170,10 @@
                             <div class="border rounded p-3 bg-light">
                                 <div class="kicker mb-2">Quick intuition</div>
                                 <ul class="mb-0 small">
-                                    <li><span class="fw-semibold">Right-shifted</span> distribution = more graduation pressure.
-                                    </li>
-                                    <li><span class="fw-semibold">Top decile</span> should contain a big share of expected
-                                        graduations.</li>
+                                    <li><span class="fw-semibold">X-axis</span>: predicted P(graduate in 12m) for each loan.</li>
+                                    <li><span class="fw-semibold">Bars</span>: how many loans fall into each probability bucket.</li>
+                                    <li><span class="fw-semibold">Right-heavy</span> histogram = more loans are near-term graduation risk.</li>
+                                    <li><span class="fw-semibold">Wide</span> histogram = risk is unevenly distributed across loans.</li>
                                 </ul>
                             </div>
                         </div>
@@ -434,9 +434,9 @@
 
     <!-- Scripts: match Vehicle Incentives pattern -->
     <script type="module" src="/cockpits/shared/cockpit-shell.js"></script>
+    <script type="module" src="/cockpits/shared/cockpit-utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
-    <script type="module" src="/js/cockpit.js"></script>
 
     <!-- pull tooltip -->
     <script>

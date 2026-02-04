@@ -38,7 +38,7 @@ def explain_risk_model_global_local(
     use_shap = False
     shap_values = None
     try:
-        import shap  # noqa
+        shap = importlib.import_module("shap")  # type: ignore
         if hazard_model_bundle["type"] == "gbm":
             explainer = shap.TreeExplainer(hazard_model_bundle["model"])
             shap_values = explainer.shap_values(Xs)

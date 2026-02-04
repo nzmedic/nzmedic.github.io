@@ -9,6 +9,7 @@ import {
     toNum,
 } from "/cockpits/shared/cockpit-utils.js";
 
+const $ = (sel) => document.querySelector(sel);
 const scenarioSelect = qs("#scenarioSelect");
 const offerBpsSelect = qs("#offerBpsSelect");
 const loanSearch = qs("#loanSearch");
@@ -193,6 +194,14 @@ function computeInsights(riskRows, upliftRows, chosen) {
  * Render the uplift scatter plot.
  * @param {Array<Record<string, string>>} upliftRows - Uplift rows for the scenario.
  */
+
+function baselineRetention(r) {
+    if (Number.isFinite(Number(r.mu0_retention))) return Number(r.mu0_retention);
+    if (Number.isFinite(Number(r.prob_graduate_12m)))
+        return 1 - Number(r.prob_graduate_12m);
+    return null;
+}
+
 function renderUpliftScatter(upliftRows) {
     const bps = toNum(offerBpsSelect.value, 100);
 
@@ -222,7 +231,7 @@ function renderUpliftScatter(upliftRows) {
     for (const [seg, g] of groups.entries()) {
         const xs = g.map(r => toNum(r.mu0_retention, null)).filter(v => v !== null);
         // To keep alignment of hover + arrays, rebuild from g and allow nulls:
-        const x = g.map(r => toNum(r.mu0_retention, null));
+        const x = g.map(r => baselineRetention(r));
         const y = g.map(r => toNum(r.ite_retention_12m, null));
         const text = g.map(r => `Loan ${r.loan_id}`);
 
