@@ -4,6 +4,16 @@ from typing import List
 
 @dataclass
 class Scenario:
+    """Scenario configuration for synthetic data and model adjustments.
+
+    Attributes:
+        name: Scenario identifier used in outputs.
+        prime_rate_shift_bps: Shift in prime rate in basis points.
+        unemployment_shift: Additive unemployment shift.
+        refi_appetite_shift: Shift in refinance appetite factor.
+        offer_intensity: Multiplier applied to offer probability.
+        te_multiplier: Multiplier applied to treatment effects.
+    """
     name: str
     prime_rate_shift_bps: float = 0.0
     unemployment_shift: float = 0.0

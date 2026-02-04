@@ -37,6 +37,16 @@ from .explain import (
 from .io_utils import cockpit_outputs_dir, write_outputs
 
 def build_uplift_slider_rows(uplift_scored: pd.DataFrame, bps_grid, horizon_months: int):
+    """Expand uplift scores across a grid of offer basis points.
+
+    Args:
+        uplift_scored: DataFrame with per-loan uplift estimates.
+        bps_grid: Iterable of basis point values to evaluate.
+        horizon_months: Horizon in months for incremental value projections.
+
+    Returns:
+        DataFrame with uplift rows replicated per basis point offer.
+    """
     slider_rows = []
     for bps in bps_grid:
         tmp = uplift_scored.copy()
@@ -66,6 +76,19 @@ def run_one_scenario(scenario, out_dir: str, seed: int = 7,
                     asof_month: int = DEFAULT_ASOF_MONTH_RISK,
                     decision_month: int = DEFAULT_DECISION_MONTH_UPLIFT,
                     uplift_horizon_months: int = DEFAULT_UPLIFT_HORIZON_MONTHS):
+    """Run the full modeling pipeline for a single scenario.
+
+    Args:
+        scenario: Scenario configuration to run.
+        out_dir: Output directory for cockpit CSV/JSON artifacts.
+        seed: Random seed for synthetic data generation.
+        asof_month: As-of month for survival modeling.
+        decision_month: Decision snapshot month for uplift modeling.
+        uplift_horizon_months: Horizon in months for uplift outcomes.
+
+    Returns:
+        Summary dictionary with scenario name, output paths, and row counts.
+    """
 
     # A) generate
     _, _, perf = generate_synthetic_portfolio(scenario=scenario, seed=seed)
@@ -149,6 +172,7 @@ def run_one_scenario(scenario, out_dir: str, seed: int = 7,
     return {"scenario": scenario.name, "paths": paths, "rows_perf": int(len(perf_feat))}
 
 def main():
+    """Run all configured scenarios and write cockpit outputs."""
     out_dir = cockpit_outputs_dir()
     print(f"Writing cockpit outputs to: {out_dir}")
     summaries = [run_one_scenario(sc, out_dir=out_dir, seed=7) for sc in SCENARIOS]

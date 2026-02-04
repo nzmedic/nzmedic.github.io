@@ -6,6 +6,14 @@ import numpy as np
 from typing import Tuple
 
 def add_time_varying_features(perf_df: pd.DataFrame) -> pd.DataFrame:
+    """Add rolling, lagged, and derived features to the performance dataset.
+
+    Args:
+        perf_df: Monthly loan performance records.
+
+    Returns:
+        DataFrame with additional engineered feature columns.
+    """
     df = perf_df.sort_values(["loan_id", "loan_age_month"]).copy()
 
     df["dpd30_roll3"] = df.groupby("loan_id")["dpd30"].rolling(3, min_periods=1).mean().reset_index(level=0, drop=True)
@@ -27,6 +35,14 @@ def add_time_varying_features(perf_df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 def build_discrete_time_hazard_dataset(perf_df: pd.DataFrame) -> pd.DataFrame:
+    """Build a discrete-time hazard modeling dataset from performance data.
+
+    Args:
+        perf_df: Monthly loan performance records with engineered features.
+
+    Returns:
+        DataFrame with hazard model columns and an event indicator.
+    """
     df = perf_df.copy()
     df["event"] = df["graduated_this_month"].astype(int)
     cols = [
@@ -42,11 +58,31 @@ def build_discrete_time_hazard_dataset(perf_df: pd.DataFrame) -> pd.DataFrame:
     return df[cols].copy()
 
 def time_based_split(df: pd.DataFrame, time_col: str = "month_asof", split_month: int = 18) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """Split a DataFrame into train/validation sets by time.
+
+    Args:
+        df: Input dataset with a time column.
+        time_col: Column to use for the split boundary.
+        split_month: Inclusive month for training data.
+
+    Returns:
+        Tuple of (train_df, valid_df).
+    """
     train = df[df[time_col] <= split_month].copy()
     valid = df[df[time_col] > split_month].copy()
     return train, valid
 
 def build_decision_dataset_for_uplift(perf_df: pd.DataFrame, decision_month: int, horizon_months: int = 12) -> pd.DataFrame:
+    """Create a decision snapshot dataset for uplift modeling.
+
+    Args:
+        perf_df: Monthly loan performance records.
+        decision_month: Snapshot month to define treatment decisions.
+        horizon_months: Future months to evaluate graduation outcomes.
+
+    Returns:
+        DataFrame with decision-time features and outcome labels.
+    """
     df = perf_df.sort_values(["loan_id", "month_asof"]).copy()
 
     snap = df[df["month_asof"] == decision_month].copy()
