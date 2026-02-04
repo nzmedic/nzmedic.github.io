@@ -63,9 +63,9 @@ def build_uplift_slider_rows(uplift_scored: pd.DataFrame, bps_grid, horizon_mont
     return pd.concat(slider_rows, ignore_index=True)
 
 def run_one_scenario(scenario, out_dir: str, seed: int = 7,
-                     asof_month: int = DEFAULT_ASOF_MONTH_RISK,
-                     decision_month: int = DEFAULT_DECISION_MONTH_UPLIFT,
-                     uplift_horizon_months: int = DEFAULT_UPLIFT_HORIZON_MONTHS):
+                    asof_month: int = DEFAULT_ASOF_MONTH_RISK,
+                    decision_month: int = DEFAULT_DECISION_MONTH_UPLIFT,
+                    uplift_horizon_months: int = DEFAULT_UPLIFT_HORIZON_MONTHS):
 
     # A) generate
     _, _, perf = generate_synthetic_portfolio(scenario=scenario, seed=seed)
@@ -104,11 +104,11 @@ def run_one_scenario(scenario, out_dir: str, seed: int = 7,
 
     uplift_metrics = pd.DataFrame([
         {"scenario_name": scenario.name, "model_name": "uplift_dr", "metric_name": "Naive_TreatedMinusControl_Retention",
-         "metric_value": naive, "notes": "biased observational estimate"},
+        "metric_value": naive, "notes": "biased observational estimate"},
         {"scenario_name": scenario.name, "model_name": "uplift_dr", "metric_name": "Adjusted_DR_Mean_ITE_Retention",
-         "metric_value": adjusted, "notes": "doubly robust mean ITE"},
+        "metric_value": adjusted, "notes": "doubly robust mean ITE"},
         {"scenario_name": scenario.name, "model_name": "uplift_dr", "metric_name": "AUUC_like",
-         "metric_value": auuc, "notes": "uplift over random ordering (approx)"},
+        "metric_value": auuc, "notes": "uplift over random ordering (approx)"},
     ])
 
     # Frontier
@@ -116,8 +116,8 @@ def run_one_scenario(scenario, out_dir: str, seed: int = 7,
                                         budget_values=[100, 250, 500, 1000, 1500, 2000],
                                         horizon_months=uplift_horizon_months)
     frontier_cost, _ = uplift_frontier(uplift_scored, budget_type="cost",
-                                       budget_values=[5_000, 10_000, 25_000, 50_000, 100_000, 150_000],
-                                       horizon_months=uplift_horizon_months)
+                                        budget_values=[5_000, 10_000, 25_000, 50_000, 100_000, 150_000],
+                                        horizon_months=uplift_horizon_months)
 
     frontier = pd.concat([frontier_count, frontier_cost], ignore_index=True)
     frontier.insert(0, "scenario_name", scenario.name)
@@ -150,6 +150,7 @@ def run_one_scenario(scenario, out_dir: str, seed: int = 7,
 
 def main():
     out_dir = cockpit_outputs_dir()
+    print(f"Writing cockpit outputs to: {out_dir}")
     summaries = [run_one_scenario(sc, out_dir=out_dir, seed=7) for sc in SCENARIOS]
     print(json.dumps(summaries, indent=2))
 

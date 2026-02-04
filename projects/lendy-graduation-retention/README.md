@@ -35,6 +35,6 @@ Each scenario produces a consistent set of CSV files suitable for a **scenario s
 
 ## Run
 
-cd projects
+Execute the following from the repo root
 
-python -m pipeline.py
+python -m projects.lendy-graduation-retention.pipeline
