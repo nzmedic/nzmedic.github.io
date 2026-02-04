@@ -293,17 +293,17 @@ function renderTargetsTable(chosen, riskRows) {
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
-      <td class="mono">${loanId}</td>
-      <td class="text-end">${money(r.balance)}</td>
-      <td class="text-end">${(r.segment || "—").replaceAll("_", " ")}</td>
-      <td class="text-end">${percent(r.ite_retention_12m, 1)}</td>
-      <td class="text-end">${money(r.incremental_nii)}</td>
-      <td class="text-end">${fixed(ettg, 1)}</td>
-    `;
+                <td class="mono">${loanId}</td>
+                <td class="text-end">${money(r.balance)}</td>
+                <td class="text-end">${(r.segment || "—").replaceAll("_", " ")}</td>
+                <td class="text-end">${percent(r.ite_retention_12m, 1)}</td>
+                <td class="text-end">${money(r.incremental_nii)}</td>
+                <td class="text-end">${fixed(ettg, 1)}</td>
+            `;
 
         tr.addEventListener("click", () => {
             selectedLoanId = loanId;
-            renderLocalExplain(cache.explainLocal);
+            renderLocalExplain(cache.explainLocal, cache.explainGlobal);
         });
 
         tbody.appendChild(tr);
@@ -314,7 +314,7 @@ function renderTargetsTable(chosen, riskRows) {
  * Render local explainability details for the selected loan.
  * @param {Array<Record<string, string>>} localRows - Local explainability rows.
  */
-function renderLocalExplain(localRows) {
+function renderLocalExplain(localRows, globalRows = []) {
     const tbody = qs("#tblLocalExplain tbody");
     const label = qs("#selectedLoanLabel");
 
@@ -324,26 +324,51 @@ function renderLocalExplain(localRows) {
         return;
     }
 
-    label.textContent = `Loan ${selectedLoanId} – top reason codes`;
+    let labelSuffix = "";
 
     let rows = localRows.filter(r => String(r.loan_id) === selectedLoanId && r.model_kind === "graduation_risk");
     if (!rows.length) rows = localRows.filter(r => String(r.loan_id) === selectedLoanId && r.model_kind === "uplift_surrogate");
 
-    rows = rows.slice().sort((a, b) => toNum(a.rank) - toNum(b.rank)).slice(0, 10);
+    let formattedRows = [];
+    if (rows.length) {
+        formattedRows = rows.slice().sort((a, b) => toNum(a.rank) - toNum(b.rank)).slice(0, 10).map(r => ({
+            rank: r.rank,
+            feature: r.feature,
+            contribution: r.contribution
+        }));
+    } else {
+        const globals = globalRows
+            .filter(r => r.model_kind === "graduation_risk")
+            .slice()
+            .sort((a, b) => toNum(b.importance) - toNum(a.importance))
+            .slice(0, 10)
+            .map((r, i) => ({
+                rank: i + 1,
+                feature: r.feature,
+                contribution: r.importance
+            }));
 
-    if (!rows.length) {
+        if (globals.length) {
+            formattedRows = globals;
+            labelSuffix = " (global)";
+        }
+    }
+
+    label.textContent = `Loan ${selectedLoanId} – top reason codes${labelSuffix}`;
+
+    if (!formattedRows.length) {
         tbody.innerHTML = `<tr><td colspan="3" class="text-muted">No explainability rows found for this loan.</td></tr>`;
         return;
     }
 
     tbody.innerHTML = "";
-    for (const r of rows) {
+    for (const r of formattedRows) {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-      <td class="mono">${r.rank || "—"}</td>
-      <td>${r.feature || "—"}</td>
-      <td class="text-end mono">${fixed(r.contribution, 4)}</td>
-    `;
+                    <td class="mono">${r.rank || "—"}</td>
+                    <td>${r.feature || "—"}</td>
+                    <td class="text-end mono">${fixed(r.contribution, 4)}</td>
+                `;
         tbody.appendChild(tr);
     }
 }
@@ -506,7 +531,7 @@ function renderAll() {
 
     // Tables
     renderTargetsTable(chosen, cache.risk);
-    renderLocalExplain(cache.explainLocal);
+    renderLocalExplain(cache.explainLocal, cache.explainGlobal);
 
     // Metrics
     renderHeadlineMetrics(cache.metrics);
