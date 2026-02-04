@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Lendy — Graduation Risk & Retention Uplift Cockpit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/assets/css/cockpit.css" />
+
+    <style>
+        .mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+
+        .table-hover tbody tr {
+            cursor: pointer;
+        }
+
+        .kpi-sub {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+
+        .kpi-main {
+            font-size: 1.6rem;
+            font-weight: 700;
+        }
+
+        .badge-soft {
+            background: rgba(13, 110, 253, .08);
+            border: 1px solid rgba(13, 110, 253, .15);
+            color: #0d6efd;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand fw-semibold" href="/">Decision Cockpits</a>
+            <div class="ms-auto d-flex gap-2">
+                <a class="btn btn-sm btn-outline-light" href="/cockpits/">Cockpits</a>
+                <a class="btn btn-sm btn-outline-light" href="/case-studies/lendy-graduation-retention">Case study</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container my-4">
+
+        <!-- Header + Controls -->
+        <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-between gap-3 mb-3">
+            <div>
+                <h1 class="h3 mb-1">Graduation Risk & Retention Uplift</h1>
+                <p class="text-muted mb-0">
+                    Identify which vehicle borrowers will refinance away, who is persuadable by rate reductions, and how
+                    to deploy a limited budget.
+                </p>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 justify-content-end">
+                <div class="card shadow-sm">
+                    <div class="card-body py-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="scenarioSelect" class="small text-muted mb-0">Scenario</label>
+                            <select id="scenarioSelect" class="form-select form-select-sm" style="min-width: 180px;">
+                                <option value="base">base</option>
+                                <option value="high_prime">high_prime</option>
+                                <option value="low_prime">low_prime</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm">
+                    <div class="card-body py-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="offerBpsSelect" class="small text-muted mb-0">Offer</label>
+                            <select id="offerBpsSelect" class="form-select form-select-sm" style="min-width: 140px;">
+                                <option value="50">50 bps</option>
+                                <option value="100" selected>100 bps</option>
+                                <option value="150">150 bps</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm">
+                    <div class="card-body py-2">
+                        <div class="d-flex flex-column gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="small text-muted">Budget</span>
+                                <div class="btn-group btn-group-sm" role="group" aria-label="Budget type">
+                                    <input type="radio" class="btn-check" name="budgetType" id="budgetTypeCount"
+                                        value="count" checked>
+                                    <label class="btn btn-outline-primary" for="budgetTypeCount">Count</label>
+
+                                    <input type="radio" class="btn-check" name="budgetType" id="budgetTypeCost"
+                                        value="cost">
+                                    <label class="btn btn-outline-primary" for="budgetTypeCost">Cost</label>
+                                </div>
+
+                                <span id="budgetLabel" class="small badge badge-soft">500 offers</span>
+
+                                <span class="text-muted small" data-bs-toggle="tooltip"
+                                    title="Count = number of offers. Cost = approximate margin cost using balance × bps × 1 year.">
+                                    ⓘ
+                                </span>
+                            </div>
+
+                            <input id="budgetSlider" type="range" class="form-range mb-0" min="100" max="2000" step="50"
+                                value="500">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendation line -->
+        <div class="alert alert-primary py-2 px-3 mb-3">
+            <span class="fw-semibold">Recommendation:</span>
+            <span id="recommendationLine">Loading…</span>
+        </div>
+
+        <!-- Insight KPIs -->
+        <div class="row g-3 mb-3">
+            <div class="col-12 col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">Graduation pressure (12m)</div>
+                        <div class="kpi-main" id="kpiPressureMain">—</div>
+                        <div class="kpi-sub" id="kpiPressureSub">—</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">Actionable opportunity</div>
+                        <div class="kpi-main" id="kpiOpportunityMain">—</div>
+                        <div class="kpi-sub" id="kpiOpportunitySub">—</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">ROI under current levers</div>
+                        <div class="kpi-main" id="kpiRoiMain">—</div>
+                        <div class="kpi-sub" id="kpiRoiSub">—</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts row -->
+        <div class="row g-3 mb-3">
+            <div class="col-12 col-lg-6">
+                <!-- Risk -->
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h5 class="card-title mb-1">Graduation Risk Distribution</h5>
+                                <div class="text-muted small">How graduation risk is distributed across the book (12m).</div>
+                                <a class="small text-decoration-none d-inline-flex mt-2" data-bs-toggle="collapse"
+                                    href="#howRisk" role="button" aria-expanded="false">
+                                    How to read this →
+                                </a>
+                            </div>
+                        </div>
+                        <div class="collapse mt-3" id="howRisk">
+                            <div class="border rounded p-3 bg-light">
+                                <div class="kicker mb-2">Quick intuition</div>
+                                <ul class="mb-0 small">
+                                    <li><span class="fw-semibold">Right-shifted</span> distribution = more graduation pressure.
+                                    </li>
+                                    <li><span class="fw-semibold">Top decile</span> should contain a big share of expected
+                                        graduations.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div id="riskChart" style="height: 320px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-6">
+                <!-- Uplift scatter -->
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h5 class="card-title mb-1">Uplift Scatter</h5>
+                                <div class="text-muted small">
+                                    Baseline retention (μ0) vs incremental retention (ITE, 12m). Colour shows segment.
+                                </div>
+                                <a class="small text-decoration-none d-inline-flex mt-2" data-bs-toggle="collapse"
+                                    href="#howScatter" role="button" aria-expanded="false">
+                                    How to read this →
+                                </a>
+                            </div>
+                        </div>
+                        <div class="collapse mt-3" id="howScatter">
+                            <div class="border rounded p-3 bg-light">
+                                <div class="kicker mb-2">Quick intuition</div>
+                                <ul class="mb-0 small">
+                                    <li><span class="fw-semibold">Persuadables</span>: high ITE, not already “safe” → best
+                                        targets.</li>
+                                    <li><span class="fw-semibold">Sure things</span>: high μ0 but low ITE → avoid discount.</li>
+                                    <li><span class="fw-semibold">Lost causes</span>: low μ0 and low ITE → avoid discount.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div id="upliftScatter" style="height: 320px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-6">
+                <!-- Segments -->
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h5 class="card-title mb-1">Uplift Segments</h5>
+                                <div class="text-muted small">Only a subset are persuadable — blanket discounts waste margin.
+                                </div>
+                                <a class="small text-decoration-none d-inline-flex mt-2" data-bs-toggle="collapse"
+                                    href="#howSegments" role="button" aria-expanded="false">
+                                    How to read this →
+                                </a>
+                            </div>
+                        </div>
+                        <div class="collapse mt-3" id="howSegments">
+                            <div class="border rounded p-3 bg-light">
+                                <div class="kicker mb-2">Quick intuition</div>
+                                <ul class="mb-0 small">
+                                    <li><span class="fw-semibold">Persuadables</span>: offer changes behaviour.</li>
+                                    <li><span class="fw-semibold">Sure things</span>: would stay anyway.</li>
+                                    <li><span class="fw-semibold">Lost causes</span>: will leave anyway.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div id="segmentChart" style="height: 320px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-6">
+                <!-- Frontier -->
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h5 class="card-title mb-1">Budget Frontier</h5>
+                                <div class="text-muted small">Expected incremental NII as budget increases; dot shows current
+                                    selection.</div>
+                                <a class="small text-decoration-none d-inline-flex mt-2" data-bs-toggle="collapse"
+                                    href="#howFrontier" role="button" aria-expanded="false">
+                                    How to read this →
+                                </a>
+                            </div>
+                        </div>
+                        <div class="collapse mt-3" id="howFrontier">
+                            <div class="border rounded p-3 bg-light">
+                                <div class="kicker mb-2">Quick intuition</div>
+                                <ul class="mb-0 small">
+                                    <li><span class="fw-semibold">Steep early</span> = easy wins.</li>
+                                    <li><span class="fw-semibold">Flattening</span> = diminishing returns.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div id="frontierChart" style="height: 320px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action + Explainability -->
+        <div class="row g-3 mb-3">
+            <div class="col-12 col-lg-7">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white">
+                        <div class="d-flex align-items-center justify-content-between gap-2">
+                            <div>
+                                <div class="fw-semibold">Operational target list</div>
+                                <div class="text-muted small">Top recommended offers under current levers (click for
+                                    reason codes).</div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <input id="loanSearch" class="form-control form-control-sm"
+                                    placeholder="Search loan_id…" style="max-width: 220px;">
+                                <a class="btn btn-sm btn-outline-secondary" id="dlUpliftCsv" href="#"
+                                    download>Download</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="table-responsive" style="max-height: 420px;">
+                            <table class="table table-sm table-hover align-middle mb-0" id="tblTargets">
+                                <thead>
+                                    <tr>
+                                        <th>Loan</th>
+                                        <th class="text-end">Balance</th>
+                                        <th class="text-end">Segment</th>
+                                        <th class="text-end">ITE (12m)</th>
+                                        <th class="text-end">Inc NII</th>
+                                        <th class="text-end">ETTG (m)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="6" class="text-muted">Loading…</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="text-muted small mt-2">
+                            Targets are ranked by incremental NII (proxy). Use the reason codes panel for
+                            explainability.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-5">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="fw-semibold">Reason codes</div>
+                                <div class="text-muted small" id="selectedLoanLabel">Select a loan from the target list.
+                                </div>
+                            </div>
+                            <a class="btn btn-sm btn-outline-secondary" id="dlExplainLocalCsv" href="#"
+                                download>Download</a>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="table-responsive" style="max-height: 420px;">
+                            <table class="table table-sm align-middle mb-0" id="tblLocalExplain">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Feature</th>
+                                        <th class="text-end">Contribution</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="3" class="text-muted">No loan selected.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="text-muted small mt-2">
+                            Local attributions from <span class="mono">explainability_local_*.csv</span>.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Validation / Method -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="fw-semibold">Method & validation</div>
+                        <div class="text-muted small">Headline metrics for trust; full metrics available in CSV.</div>
+                    </div>
+                    <a class="btn btn-sm btn-outline-secondary" id="dlMetricsCsv" href="#" download>Download metrics</a>
+                </div>
+
+                <div class="row g-3 mt-2">
+                    <div class="col-12 col-md-4">
+                        <div class="border rounded p-3 bg-light h-100">
+                            <div class="text-muted small">Survival model</div>
+                            <div class="h5 mb-1" id="metricSurvival">—</div>
+                            <div class="text-muted small" id="metricSurvivalSub">—</div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <div class="border rounded p-3 bg-light h-100">
+                            <div class="text-muted small">Uplift model</div>
+                            <div class="h5 mb-1" id="metricUplift">—</div>
+                            <div class="text-muted small" id="metricUpliftSub">—</div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <div class="border rounded p-3 bg-light h-100">
+                            <div class="text-muted small">Bias check</div>
+                            <div class="h5 mb-1" id="metricBias">—</div>
+                            <div class="text-muted small" id="metricBiasSub">—</div>
+                        </div>
+                    </div>
+                </div>
+
+                <a class="small text-decoration-none d-inline-flex mt-2" data-bs-toggle="collapse" href="#methodNotes"
+                    role="button" aria-expanded="false">
+                    Show details →
+                </a>
+
+                <div class="collapse mt-2" id="methodNotes">
+                    <div class="border rounded p-3 bg-light">
+                        <ul class="mb-0 small">
+                            <li><b>Graduation risk:</b> discrete-time hazard model (3/6/12m probabilities + expected
+                                time to graduation).</li>
+                            <li><b>Uplift:</b> propensity-adjusted ITE estimation for incremental retention from rate
+                                reductions.</li>
+                            <li><b>Frontier:</b> precomputed budget curves per scenario; dot reflects your current
+                                levers.</li>
+                            <li><b>Explainability:</b> global + local attributions (SHAP if available; otherwise
+                                approximations).</li>
+                        </ul>
+                        <div class="mt-2">
+                            <a class="btn btn-sm btn-outline-primary" id="dlRiskCsv" href="#" download>Risk CSV</a>
+                            <a class="btn btn-sm btn-outline-primary" id="dlFrontierCsv" href="#" download>Frontier
+                                CSV</a>
+                            <a class="btn btn-sm btn-outline-primary" id="dlExplainGlobalCsv" href="#" download>Explain
+                                global CSV</a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Scripts: match Vehicle Incentives pattern -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script type="module" src="/js/cockpit.js"></script>
+
+    <!-- pull tooltip -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map((el) => new bootstrap.Tooltip(el));
+        });
+    </script>
+
+    <!-- Cockpit-specific JS -->
+    <script type="module" src="/cockpits/lendy-graduation-retention/lendy-graduation-retention.js"></script>
+
+</body>
+
+</html>

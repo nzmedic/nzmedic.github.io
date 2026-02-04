@@ -1,0 +1,10 @@
+scenario_name,model_name,metric_name,metric_value,notes
+high_prime,hazard_model,AUC_3m,0.7081072846847225,asof_month=18
+high_prime,hazard_model,Calib_MAE_3m,0.0022222167672817797,decile-calibration asof_month=18
+high_prime,hazard_model,AUC_6m,0.6960620433634914,asof_month=18
+high_prime,hazard_model,Calib_MAE_6m,0.004323939465867741,decile-calibration asof_month=18
+high_prime,hazard_model,AUC_12m,0.6989835651857033,asof_month=18
+high_prime,hazard_model,Calib_MAE_12m,0.007041871405416672,decile-calibration asof_month=18
+high_prime,uplift_dr,Naive_TreatedMinusControl_Retention,-0.016081976683243515,biased observational estimate
+high_prime,uplift_dr,Adjusted_DR_Mean_ITE_Retention,0.004278732350725407,doubly robust mean ITE
+high_prime,uplift_dr,AUUC_like,474.5856852733787,uplift over random ordering (approx)
