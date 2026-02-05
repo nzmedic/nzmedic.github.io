@@ -100,8 +100,17 @@ def time_based_split(df: pd.DataFrame, time_col: str = "month_asof", split_month
     Returns:
         Tuple of (train_df, valid_df).
     """
+    if df.empty:
+        return df.copy(), df.copy()
+
+    min_t = int(df[time_col].min())
+    max_t = int(df[time_col].max())
+
+    split_month = int(np.clip(split_month, min_t, max_t - 1)) if max_t > min_t else min_t
+
     train = df[df[time_col] <= split_month].copy()
     valid = df[df[time_col] > split_month].copy()
+
     return train, valid
 
 def build_decision_dataset_for_uplift(perf_df: pd.DataFrame, decision_month: int, horizon_months: int = 12) -> pd.DataFrame:

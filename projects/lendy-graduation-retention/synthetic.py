@@ -16,7 +16,7 @@ PERF_SCHEMA_COLS = [
     "loan_id", "customer_id", "product",
     "origination_month",
     "loan_age_month", "month_asof", "term_months",
-    "balance", "apr", "market_rate", "rate_diff",
+    "balance", "balance_true", "apr", "market_rate", "rate_diff",
     "credit_score", "credit_score_true", "credit_score_reported",
     "prime_eligible",
     "dpd30", "late_count_roll",
@@ -118,13 +118,16 @@ def maybe_truncate_history(
     Returns:
         The final max age to simulate (<= max_age).
     """
-    if max_age <= min_keep:
-        return max_age
+    max_age = int(max_age)
+    if max_age <= 1:
+        return 1
+
+    min_keep = int(min(min_keep, max_age))
     if rng.random() >= p_truncate:
         return max_age
 
-    # truncate somewhere between min_keep and max_age-1
-    return int(rng.integers(min_keep, max_age))
+    # truncate somewhere between min_keep and max_age (inclusive)
+    return int(rng.integers(min_keep, max_age + 1))
 
 
 def sigmoid01(x: float) -> float:
@@ -187,6 +190,10 @@ def add_measurement_noise(
 # Primary synthetic data generation function 
 # --------------
 
+# TODO: refactor this function to:
+# 1. be more modular and testable, and to allow generating partial histories with reporting lag without needing to simulate the full history first. The main barrier is that currently the true credit score series is generated on the fly within the loan-month loop, but it needs to be generated first in order to apply the reporting lag before writing rows. One option is to generate the full true score series for all loans upfront in a separate pass, then apply lags, then generate rows in a final pass. This would also allow us to add measurement noise and MAR missingness to the scores in a more controlled way.
+# 2. optimize performance by vectorizing more of the operations and avoiding Python loops where possible. The current implementation is straightforward but may be slow for large n_customers and months_max. We could explore using NumPy arrays or even a library like Numba to speed up the inner loop over loan-months.
+# 3. break down the function into smaller helper functions for clarity. The current implementation is a bit monolithic and could benefit from being decomposed into logical steps (e.g. generate customers, generate loans, simulate performance with features and outcomes, apply messiness).
 
 def generate_synthetic_portfolio(
     scenario: Scenario,
@@ -220,6 +227,25 @@ def generate_synthetic_portfolio(
     income = rng.lognormal(mean=np.log(70_000), sigma=0.45, size=n_customers)
     income = np.clip(income, 25_000, 250_000)
 
+    if messy_level >= 2:
+        # Observed income: noisy + rounded to nearest $1,000 to mimic a common approach in CRMs
+        income_observed = np.array(
+            [add_measurement_noise(rng, v, sigma=1500.0, round_to=1000.0) for v in income],
+            dtype=float
+        )
+    else:
+        income_observed = income.copy()
+
+    # MAR: income missing more often for low stability and broker-originated customers
+    if messy_level >= 2:
+        
+        income_mar = []
+        for inc_obs, stab, intro in zip(income_observed, income_stability, introducer_canonical):
+            p = sigmoid01(-3.0 + 2.3*(0.55 - stab) + (0.9 if "Broker" in intro else 0.0))
+            p = float(np.clip(p, 0.0, 0.30))
+            income_mar.append(maybe_set_missing_mar(rng, inc_obs, p))
+        income_observed = np.array(income_mar, dtype=float)
+
     income_stability = np.clip(rng.normal(0.6, 0.18, n_customers), 0.05, 0.98)
     tenure_months = np.clip(rng.gamma(shape=3.2, scale=18, size=n_customers), 3, 240)
 
@@ -244,7 +270,8 @@ def generate_synthetic_portfolio(
 
     customers_df = pd.DataFrame({
         "customer_id": customer_id,
-        "income": income,
+        "income": income_observed,  # observed income with messiness if enabled, otherwise same as true income
+        "income": income, # true (clean) income without messiness
         "income_stability": income_stability,
         "tenure_months": tenure_months,
         "introducer": introducer_observed,
@@ -349,12 +376,20 @@ def generate_synthetic_portfolio(
             credit_score = float(np.clip(credit_score + score_delta, 430, 820))
             true_scores.append(credit_score) # keep a record of ground truth before reporting lag
 
+            if messy_level >= 2 and rng.random() < 0.002:
+                # Rare bureau shock / correction
+                credit_score = float(np.clip(credit_score + rng.normal(0, 90), 430, 820))
+
             extra_pay = rng.normal(0.0, 0.015) + 0.02 * (credit_score > 690) + 0.01*(stab > 0.7)
             extra_pay = max(0.0, extra_pay)
             scheduled_paydown = balance / max(6, (term - age + 1)) * 0.18
             paydown = scheduled_paydown * (1 + extra_pay) * (1 - 0.15*dpd30)
             paydown = min(balance, max(0.0, paydown))
             balance = float(np.clip(balance - paydown, 0.0, bal0))
+
+            if messy_level >= 2 and rng.random() < 0.001:
+                # Rare servicing/reversal correction causing balance jump
+                balance = float(np.clip(balance * rng.uniform(0.85, 1.25), 0.0, bal0 * 1.4))
 
             prime_eligible = int((credit_score >= 680) and (ever_30dpd == 0) and (age >= 6))
             rate_diff = (apr - market_rate)
@@ -410,6 +445,13 @@ def generate_synthetic_portfolio(
             grad = int((not closed) and (rng.random() < hazard) and (balance > 0.0))
             scheduled_close = int((not closed) and (balance <= 100.0))
 
+            if messy_level >= 2:
+                # Observed balance: small noise + cents stripped (ledger vs reporting mismatch)
+                balance_obs = float(add_measurement_noise(rng, balance, sigma=max(5.0, 0.002 * bal0), round_to=10.0))
+                balance_obs = float(np.clip(balance_obs, 0.0, bal0 * 1.5))
+            else:
+                balance_obs = balance
+
             loan_month_rows.append({
                 "scenario_name": scenario.name,
                 "loan_id": int(r["loan_id"]),
@@ -419,7 +461,8 @@ def generate_synthetic_portfolio(
                 "loan_age_month": age,
                 "month_asof": month_asof,
                 "term_months": term,
-                "balance": balance,
+                "balance": balance_obs, # observed (noisy)
+                "balance_true": balance, # truth
                 "apr": apr,
                 "market_rate": market_rate,
                 "rate_diff": rate_diff,
@@ -432,6 +475,7 @@ def generate_synthetic_portfolio(
                 "income_stability": stab,
                 "tenure_months": ten,
                 "introducer": intro_obs, # observed (messy), intro_canon contains ground truth if required
+                "introducer_canonical": intro_canon, # canonical (clean),
                 "treated": treated,
                 "treatment_bps": treatment_bps,
                 "true_base_hazard": base_hazard,
@@ -455,6 +499,9 @@ def generate_synthetic_portfolio(
         else:
             for row in loan_month_rows:
                 row["credit_score_reported"] = float(row["credit_score_true"])
+        
+        # Persist this loan's rows into the full performance table
+        perf_rows.extend(loan_month_rows)
 
     perf_df = pd.DataFrame(perf_rows)
 
@@ -464,5 +511,13 @@ def generate_synthetic_portfolio(
             perf_df[col] = np.nan
     
     perf_df = perf_df[PERF_SCHEMA_COLS].copy()
+
+    # DQ test to catch invalid outputs early during development, particularly for small test runs.
+    if perf_df.empty:
+        raise ValueError(
+            f"generate_synthetic_portfolio produced 0 perf rows "
+            f"(scenario={scenario.name}, n_customers={n_customers}, months_max={months_max}, messy_level={messy_level}). "
+            f"This indicates a generator bug (e.g., loan_month_rows not appended)."
+        )
 
     return customers_df, loans_df, perf_df

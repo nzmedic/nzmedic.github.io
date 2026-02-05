@@ -10,6 +10,19 @@ The use case focuses on **retaining high-quality vehicle-loan customers** who ar
 
 ---
 
+## Folder structure
+
+| Stage    | Purpose                        | Intended Contents                 |
+| -------- | ------------------------------ | --------------------------------- |
+| raw      | What the source system gave us | messy, inconsistent, delayed data |
+| clean    | What we trust for modelling    | imputed, standardised, validated  |
+| features | Model-ready tables             | hazard_df, uplift_snapshots       |
+| models   | Fitted artefacts               | pickles, coefficients             |
+| eval     | Evidence                       | metrics, lift tables, calibration |
+
+
+
+
 ## Scenarios
 
 Scenarios are defined in `config.py` and currently include:
@@ -33,6 +46,7 @@ Each scenario produces a consistent set of CSV files suitable for a **scenario s
 
 
 
+
 ## Run
 
 Execute the following from the repo root:
@@ -41,7 +55,7 @@ Execute the following from the repo root:
 
 NB: outputs are pushed to `projects.lendy-graduation-retention.outputs`. To update the cockpit copy outputs to `cockpits.lendy-graduation-retention.outputs`
 
-For quick tests run:
+For quick tests (<5min) run:
 
 Just base scenario, small dataset:
 `python -m projects.lendy-graduation-retention.pipeline --scenarios base --n-customers 1500 --months-max 24`

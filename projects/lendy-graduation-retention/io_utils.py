@@ -15,18 +15,26 @@ import pandas as pd
 
 def repo_root() -> Path:
     """
-    Resolve repo root from this file location.
+    Resolve repository root by walking upward until common repo markers are found.
 
-    File location:
-        <repo_root>/projects/lendy-graduation-retention/io_utils.py
+    Args:
+        None.
 
-    parents:
-        [0] io_utils.py
-        [1] lendy-graduation-retention
-        [2] projects
-        [3] <repo_root>
+    Returns:
+        Path to the repository root directory.
+
+    Raises:
+        RuntimeError: If no repo root marker is found within a reasonable number of parents.
     """
-    return Path(__file__).resolve().parents[3]
+    here = Path(__file__).resolve()
+
+    for p in [here] + list(here.parents):
+        if (p / "projects").is_dir() and (p / "cockpits").is_dir():
+            return p
+        if (p / ".gitignore").exists():
+            return p
+
+    raise RuntimeError(f"Could not locate repo root from {here}")
 
 
 def ensure_dir(path: Path) -> None:
@@ -35,7 +43,7 @@ def ensure_dir(path: Path) -> None:
 
 def cockpit_outputs_dir() -> str:
     """Return (and create) the cockpit outputs directory path."""
-    out = repo_root() / "projects" / "lendy-graduation-retention" / "outputs"
+    out = repo_root() / "cockpits" / "lendy-graduation-retention" / "outputs"
     out.mkdir(parents=True, exist_ok=True)
     return str(out)
 
