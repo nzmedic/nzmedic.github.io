@@ -35,6 +35,20 @@ Each scenario produces a consistent set of CSV files suitable for a **scenario s
 
 ## Run
 
-Execute the following from the repo root
+Execute the following from the repo root:
 
-python -m projects.lendy-graduation-retention.pipeline
+`python -m projects.lendy-graduation-retention.pipeline`
+
+NB: outputs are pushed to `projects.lendy-graduation-retention.outputs`. To update the cockpit copy outputs to `cockpits.lendy-graduation-retention.outputs`
+
+For quick tests run:
+
+Just base scenario, small dataset:
+`python -m projects.lendy-graduation-retention.pipeline --scenarios base --n-customers 1500 --months-max 24`
+
+Base + high_prime, even smaller:
+`python -m projects.lendy-graduation-retention.pipeline --scenarios base,high_prime --n-customers 800 --months-max 18`
+
+Base with some messy data
+`python -m projects.lendy-graduation-retention.pipeline --scenarios base --n-customers 800 --months-max 12 --messy-level 1`
+

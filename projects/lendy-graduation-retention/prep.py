@@ -1,19 +1,51 @@
 #feature engineering + hazard dataset + uplift decision dataset + time splits
 
-# projects/lendy-graduation-retention/prep.py
+from __future__ import annotations
+
 import pandas as pd
 import numpy as np
 from typing import Tuple
 
+def build_clean_tables(
+    *,
+    customers_raw: pd.DataFrame,
+    loans_raw: pd.DataFrame,
+    monthly_perf_raw: pd.DataFrame,
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """
+    Step 1: raw/clean separation.
+    For now this is a pass-through so the pipeline contract is established.
+    Step 2 will implement real cleaning + data quality reporting.
+    """
+    customers_clean = customers_raw.copy()
+    loans_clean = loans_raw.copy()
+    monthly_perf_clean = monthly_perf_raw.copy()
+
+    return customers_clean, loans_clean, monthly_perf_clean
+
+
+
 def add_time_varying_features(perf_df: pd.DataFrame) -> pd.DataFrame:
-    """Add rolling, lagged, and derived features to the performance dataset.
+    """
+    Add rolling, lagged, and derived features to the performance dataset.
 
     Args:
         perf_df: Monthly loan performance records.
 
     Returns:
-        DataFrame with additional engineered feature columns.
+        DataFrame with engineered features.
+
+    Raises:
+        ValueError: If required identifier columns are missing.
     """
+    required = ["loan_id", "loan_age_month", "month_asof", "balance", "income", "credit_score", "apr", "market_rate", "introducer"]
+    missing = [c for c in required if c not in perf_df.columns]
+    if missing:
+        raise ValueError(
+            f"add_time_varying_features: perf_df missing required columns: {missing}. "
+            f"Columns present: {list(perf_df.columns)[:30]}{'...' if len(perf_df.columns) > 30 else ''}"
+        )
+
     df = perf_df.sort_values(["loan_id", "loan_age_month"]).copy()
 
     df["dpd30_roll3"] = df.groupby("loan_id")["dpd30"].rolling(3, min_periods=1).mean().reset_index(level=0, drop=True)

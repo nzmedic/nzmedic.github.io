@@ -1,8 +1,47 @@
 # for scenarios and shared constants
 from dataclasses import dataclass
 from typing import List
+from pathlib import Path
 
-@dataclass
+# Classes and functions for configuration and shared constants across the project.
+
+@dataclass(frozen=True)
+class Paths:
+    """
+    File system paths used by the project.
+
+    Attributes:
+        project_root: Root directory of this project module.
+        outputs_root: Root directory where pipeline artefacts are written.
+    """
+    project_root: Path
+    outputs_root: Path
+
+    @property
+    def raw_dir(self) -> Path:
+        return self.outputs_root / "raw"
+
+    @property
+    def clean_dir(self) -> Path:
+        return self.outputs_root / "clean"
+
+    @property
+    def features_dir(self) -> Path:
+        return self.outputs_root / "features"
+
+    @property
+    def models_dir(self) -> Path:
+        return self.outputs_root / "models"
+
+    @property
+    def eval_dir(self) -> Path:
+        return self.outputs_root / "eval"
+
+    @property
+    def cockpit_dir(self) -> Path:
+        return self.outputs_root / "cockpit"
+
+@dataclass(frozen=True)
 class Scenario:
     """Scenario configuration for synthetic data and model adjustments.
 
@@ -21,12 +60,38 @@ class Scenario:
     offer_intensity: float = 1.0
     te_multiplier: float = 1.0
 
+# Utility function to get paths based on project structure.
+
+def get_paths() -> Paths:
+    """
+    Construct project path configuration.
+
+    Returns:
+        Paths instance containing project and outputs roots.
+    """
+    project_root = Path(__file__).resolve().parents[0]
+    outputs_root = project_root / "outputs"
+    return Paths(project_root=project_root, outputs_root=outputs_root)
+
+
 SCENARIOS: List[Scenario] = [
     Scenario(name="base"),
-    Scenario(name="high_prime", prime_rate_shift_bps=+150.0, unemployment_shift=+0.01, refi_appetite_shift=-0.15,
-            offer_intensity=1.0, te_multiplier=0.9),
-    Scenario(name="low_prime", prime_rate_shift_bps=-150.0, unemployment_shift=-0.01, refi_appetite_shift=+0.15,
-            offer_intensity=1.0, te_multiplier=1.1),
+    Scenario(
+        name="high_prime",
+        prime_rate_shift_bps=+150.0,
+        unemployment_shift=+0.01,
+        refi_appetite_shift=-0.15,
+        offer_intensity=1.0,
+        te_multiplier=0.9,
+    ),
+    Scenario(
+        name="low_prime",
+        prime_rate_shift_bps=-150.0,
+        unemployment_shift=-0.01,
+        refi_appetite_shift=+0.15,
+        offer_intensity=1.0,
+        te_multiplier=1.1,
+    ),
 ]
 
 DEFAULT_ASOF_MONTH_RISK = 18
@@ -45,3 +110,4 @@ BASE_FEATURE_COLS = [
     "income", "income_stability", "tenure_months",
     "introducer"
 ]
+

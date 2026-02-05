@@ -7,5 +7,5 @@ __pycache__/
 *.pyc
 
 # generated artefacts
+projects/lendy-graduation-retention/outputs
 projects/lendy-loss-risk/outputs/
-projects/lendy-loss-risk/.pytest_cache/

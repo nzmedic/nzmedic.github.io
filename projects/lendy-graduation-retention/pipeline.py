@@ -1,7 +1,9 @@
-# orchestration only
+# orchestration
 
+import argparse
 import json
 import pandas as pd
+from typing import Dict, Any
 from sklearn.model_selection import train_test_split
 
 from .config import (
@@ -13,11 +15,14 @@ from .config import (
 )
 from .synthetic import generate_synthetic_portfolio
 from .prep import (
+    build_clean_tables,
     add_time_varying_features,
     build_discrete_time_hazard_dataset,
     time_based_split,
     build_decision_dataset_for_uplift
 )
+from .dq import profile_many, rollup_table_profile
+
 from .models import (
     fit_hazard_models,
     loan_level_survival_summary,
@@ -34,7 +39,73 @@ from .explain import (
     explain_risk_model_global_local,
     explain_uplift_via_surrogate
 )
-from .io_utils import cockpit_outputs_dir, write_outputs
+from .io_utils import (
+    cockpit_outputs_dir,
+    write_outputs,
+    write_stage_table,
+    write_dq_summary,
+    write_dq_rollup,
+)
+
+def parse_args() -> argparse.Namespace:
+    """
+    Parse CLI arguments for running the pipeline with smaller/faster testing.
+
+    Returns:
+        argparse.Namespace with parsed values.
+
+    Arguments:
+        --scenarios: Comma-separated scenario names to run (e.g. "base,high_prime").
+                        Defaults to all configured scenarios.
+        --n-customers: Number of customers to simulate (smaller = faster).
+        --months-max: Maximum months to simulate per loan (smaller = faster).
+        --seed: Random seed for reproducibility.
+        --asof-month: As-of month for hazard model train/validation split boundary.
+        --decision-month: Snapshot month for uplift decision dataset.
+        --uplift-horizon-months: Horizon (months) for uplift outcomes.
+    """
+    p = argparse.ArgumentParser()
+    p.add_argument("--scenarios", type=str, default="",
+                    help="Comma-separated scenario names to run (e.g. 'base,high_prime'). Default: all.")
+    p.add_argument("--n-customers", type=int, default=12_000,
+                    help="Number of customers to simulate. Default: 12000.")
+    p.add_argument("--months-max", type=int, default=60,
+                    help="Maximum months to simulate per loan. Default: 60.")
+    p.add_argument("--seed", type=int, default=7,
+                    help="Random seed. Default: 7.")
+    p.add_argument("--asof-month", type=int, default=DEFAULT_ASOF_MONTH_RISK,
+                    help=f"As-of month for survival modelling. Default: {DEFAULT_ASOF_MONTH_RISK}.")
+    p.add_argument("--decision-month", type=int, default=DEFAULT_DECISION_MONTH_UPLIFT,
+                    help=f"Decision month for uplift snapshot. Default: {DEFAULT_DECISION_MONTH_UPLIFT}.")
+    p.add_argument("--uplift-horizon-months", type=int, default=DEFAULT_UPLIFT_HORIZON_MONTHS,
+                    help=f"Uplift horizon in months. Default: {DEFAULT_UPLIFT_HORIZON_MONTHS}.")
+    p.add_argument("--messy-level", type=int, default=0,
+                    help="0 clean, 1 phase-1 messiness, 2 adds missingness/outliers/noise. Default: 0.")
+
+    return p.parse_args()
+
+def select_scenarios(scenarios_arg: str):
+    """
+    Select scenarios from config based on a comma-separated CLI argument.
+
+    Args:
+        scenarios_arg: Comma-separated scenario names. If empty, returns all SCENARIOS.
+
+    Returns:
+        List[Scenario] filtered from SCENARIOS.
+
+    Raises:
+        ValueError: If any requested scenario name is not found in SCENARIOS.
+    """
+    if not scenarios_arg.strip():
+        return SCENARIOS
+
+    wanted = [s.strip() for s in scenarios_arg.split(",") if s.strip()]
+    by_name = {s.name: s for s in SCENARIOS}
+    missing = [w for w in wanted if w not in by_name]
+    if missing:
+        raise ValueError(f"Unknown scenario(s): {missing}. Available: {sorted(by_name.keys())}")
+    return [by_name[w] for w in wanted]
 
 def build_uplift_slider_rows(uplift_scored: pd.DataFrame, bps_grid, horizon_months: int):
     """Expand uplift scores across a grid of offer basis points.
@@ -72,10 +143,17 @@ def build_uplift_slider_rows(uplift_scored: pd.DataFrame, bps_grid, horizon_mont
 
     return pd.concat(slider_rows, ignore_index=True)
 
-def run_one_scenario(scenario, out_dir: str, seed: int = 7,
-                    asof_month: int = DEFAULT_ASOF_MONTH_RISK,
-                    decision_month: int = DEFAULT_DECISION_MONTH_UPLIFT,
-                    uplift_horizon_months: int = DEFAULT_UPLIFT_HORIZON_MONTHS):
+def run_one_scenario(
+    scenario,
+    out_dir: str,
+    seed: int = 7,
+    asof_month: int = DEFAULT_ASOF_MONTH_RISK,
+    decision_month: int = DEFAULT_DECISION_MONTH_UPLIFT,
+    uplift_horizon_months: int = DEFAULT_UPLIFT_HORIZON_MONTHS,
+    n_customers: int = 12_000,
+    months_max: int = 60,
+    messy_level: int = 0,
+) -> Dict[str, Any]:
     """Run the full modeling pipeline for a single scenario.
 
     Args:
@@ -85,32 +163,89 @@ def run_one_scenario(scenario, out_dir: str, seed: int = 7,
         asof_month: As-of month for survival modeling.
         decision_month: Decision snapshot month for uplift modeling.
         uplift_horizon_months: Horizon in months for uplift outcomes.
+        messy_level: Messy-data level (0/1/2).
 
     Returns:
         Summary dictionary with scenario name, output paths, and row counts.
     """
 
-    # A) generate
-    _, _, perf = generate_synthetic_portfolio(scenario=scenario, seed=seed)
+    # A) generate (RAW) and write stage artefacts (per scenario)
+    customers_raw, loans_raw, perf_raw = generate_synthetic_portfolio(
+        scenario=scenario, 
+        seed=seed,
+        n_customers=n_customers,
+        months_max=months_max,
+        messy_level=messy_level,
+    )
 
-    # B) prep/features
-    perf_feat = add_time_varying_features(perf)
+    write_stage_table(customers_raw, "raw", "customers_raw", scenario.name)
+    write_stage_table(loans_raw, "raw", "loans_raw", scenario.name)
+    write_stage_table(perf_raw, "raw", "monthly_perf_raw", scenario.name)
+
+    raw_profile = profile_many({
+        "customers_raw": customers_raw,
+        "loans_raw": loans_raw,
+        "monthly_perf_raw": perf_raw,
+    })
+
+    write_dq_summary(raw_profile, stage="raw", scenario_name=scenario.name)
+    raw_rollup = rollup_table_profile(raw_profile)
+    write_dq_rollup(raw_rollup, stage="raw", scenario_name=scenario.name)
+
+    # B) pass through clean datasts and write stage artefacts (per scenario)
+    customers_clean, loans_clean, perf_clean = build_clean_tables(
+        customers_raw=customers_raw,
+        loans_raw=loans_raw,
+        monthly_perf_raw=perf_raw,
+    )
+
+    write_stage_table(customers_clean, "clean", "customers_clean", scenario.name)
+    write_stage_table(loans_clean, "clean", "loans_clean", scenario.name)
+    write_stage_table(perf_clean, "clean", "monthly_perf_clean", scenario.name)
+
+    clean_profile = profile_many({
+        "customers_clean": customers_clean,
+        "loans_clean": loans_clean,
+        "monthly_perf_clean": perf_clean,
+    })
+
+    write_dq_summary(clean_profile, stage="clean", scenario_name=scenario.name)
+    clean_rollup = rollup_table_profile(clean_profile)
+    write_dq_rollup(clean_rollup, stage="clean", scenario_name=scenario.name)
+
+    # C) prep features 
+    # Use cleaned perf df for everything downstream to mirror real-world contract where cleaning is a separate stage with its own outputs and quality checks.
+    perf_feat = add_time_varying_features(perf_clean)
     hazard_df = build_discrete_time_hazard_dataset(perf_feat)
 
     train_h, valid_h = time_based_split(hazard_df, split_month=asof_month)
 
-    # C1) hazard models
+    #catch invalid splits that can occur with small datasets or aggressive month settings, with guidance for resolution
+    if len(train_h) == 0:
+        raise ValueError(
+            f"Hazard training set is empty (scenario={scenario.name}). "
+            f"Try reducing --asof-month (currently {asof_month}) or increasing --months-max. "
+            f"hazard_df rows={len(hazard_df)}, month_asof min={hazard_df['month_asof'].min() if len(hazard_df) else None}, "
+            f"max={hazard_df['month_asof'].max() if len(hazard_df) else None}."
+        )
+    if len(valid_h) == 0:
+        raise ValueError(
+            f"Hazard validation set is empty (scenario={scenario.name}). "
+            f"Try increasing --asof-month or increasing --months-max."
+        )
+
+    # D) hazard models
     hazard_models = fit_hazard_models(train_h, valid_h)
     hazard_prod = hazard_models["hazard_gbm"]
 
     risk_by_loan = loan_level_survival_summary(perf_feat, hazard_prod, asof_month, horizons=(3, 6, 12))
 
-    # D) survival metrics
+    # E) survival metrics
     surv_metrics = survival_eval_metrics(perf_feat, hazard_prod, asof_month)
     surv_metrics["scenario_name"] = scenario.name
     surv_metrics = surv_metrics[["scenario_name", "model_name", "metric_name", "metric_value", "notes"]]
 
-    # C2) uplift dataset + models
+    # F) uplift dataset + models
     uplift_base = build_decision_dataset_for_uplift(perf_feat, decision_month, horizon_months=uplift_horizon_months)
     train_u, _ = train_test_split(uplift_base, test_size=0.35, random_state=42, stratify=uplift_base["treated"])
 
@@ -171,11 +306,50 @@ def run_one_scenario(scenario, out_dir: str, seed: int = 7,
 
     return {"scenario": scenario.name, "paths": paths, "rows_perf": int(len(perf_feat))}
 
+
+# TODO: Guardrails included so time-based split months remain valid for small test runs but do not currently but risk remains of invalid splits if 
+# user sets asof_month or decision_month too high relative to months_max. Could add explicit checks and warnings for this in parse_args() or run_one_scenario().
+# Could also consider adding a "--fast" flag that sets a consistent combination of n_customers, months_max, and split months for quick testing without needing to adjust multiple parameters.
+
 def main():
-    """Run all configured scenarios and write cockpit outputs."""
+    """
+    Run configured scenarios and write cockpit outputs.
+
+    Uses CLI arguments to optionally reduce synthetic portfolio size for faster testing.
+    """
+    args = parse_args()
+    scenarios = select_scenarios(args.scenarios)
+
+    # Guardrail: month_asof = origination_month (0-11) + loan_age_month (1..months_max) keep split/decision months within the simulated horizon. 
+    # So typical max month_asof is ~ 11 + months_max.
+    max_month_asof_expected = 11 + args.months_max
+
+    asof_month = min(args.asof_month, max_month_asof_expected - 1)
+    decision_month = min(args.decision_month, max_month_asof_expected - 1)
+
+    if asof_month < 3:
+        asof_month = 3
+    if decision_month < 3:
+        decision_month = 3
+
+
     out_dir = cockpit_outputs_dir()
     print(f"Writing cockpit outputs to: {out_dir}")
-    summaries = [run_one_scenario(sc, out_dir=out_dir, seed=7) for sc in SCENARIOS]
+
+    summaries = [
+        run_one_scenario(
+            sc,
+            out_dir=out_dir,
+            seed=args.seed,
+            asof_month=args.asof_month,
+            decision_month=args.decision_month,
+            uplift_horizon_months=args.uplift_horizon_months,
+            n_customers=args.n_customers,
+            months_max=args.months_max,
+            messy_level=args.messy_level,
+        )
+        for sc in scenarios
+    ]
     print(json.dumps(summaries, indent=2))
 
 if __name__ == "__main__":
