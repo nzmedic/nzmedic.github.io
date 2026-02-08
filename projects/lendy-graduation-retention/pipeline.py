@@ -1,5 +1,7 @@
 # orchestration
 
+# TODO: review imports. In most cases all of a module's functions are used so importing the whole module is simpler.
+
 import argparse
 import json
 import pandas as pd
@@ -21,13 +23,15 @@ from .prep import (
     time_based_split,
     build_decision_dataset_for_uplift
 )
+
 from .io_utils import (
     cockpit_outputs_dir, 
     write_outputs, 
     write_stage_table, 
     write_dq_summary, 
     write_dq_rollup, 
-    write_issues_log
+    write_issues_log,
+    write_eval_table
 )
 
 from .dq import profile_many, rollup_table_profile
@@ -44,6 +48,11 @@ from .models import (
     compute_uplift_curve,
     uplift_frontier
 )
+
+from .eval_risk import *
+from .eval_uplift import *
+from .eval_policy import *
+
 from .explain import (
     explain_risk_model_global_local,
     explain_uplift_via_surrogate
@@ -263,6 +272,21 @@ def run_one_scenario(
 
     risk_by_loan = loan_level_survival_summary(perf_feat, hazard_prod, asof_month, horizons=(3, 6, 12))
 
+
+    # Risk evaluation artefacts
+
+    risk_eval = risk_eval_artefacts(
+        scenario_name=scenario.name,
+        perf_feat=perf_feat,
+        risk_by_loan=risk_by_loan,
+        train_h=train_h,
+        valid_h=valid_h,
+        asof_month=asof_month,
+    )
+
+    for name, df in risk_eval.items():
+        write_eval_table(df, table_name=name, scenario_name=scenario.name)
+
     # E) survival metrics
     surv_metrics = survival_eval_metrics(perf_feat, hazard_prod, asof_month)
     surv_metrics["scenario_name"] = scenario.name
@@ -291,6 +315,32 @@ def run_one_scenario(
         {"scenario_name": scenario.name, "model_name": "uplift_dr", "metric_name": "AUUC_like",
         "metric_value": auuc, "notes": "uplift over random ordering (approx)"},
     ])
+
+    # eval artefacts for uplift model and for naive vs adjusted treatment effect comparison
+    te_tbl = treatment_effect_comparison_table(
+        scenario_name=scenario.name,
+        naive_te=naive,
+        adjusted_te=adjusted,
+        model_name="uplift_dr",
+    )
+    write_eval_table(te_tbl, table_name="uplift_te_comparison", scenario_name=scenario.name)
+
+    uplift_eval_tbl = qini_auuc_table(
+        scenario_name=scenario.name,
+        uplift_scored=uplift_scored,
+        model_name="uplift_dr",
+        auuc_value=auuc,
+    )
+
+    write_eval_table(uplift_eval_tbl, table_name="uplift_qini_auuc", scenario_name=scenario.name)       
+
+    # policy artefacts
+    policy_tbl = policy_outcomes_table(
+        scenario_name=scenario.name,
+        uplift_scored=uplift_scored,
+        risk_by_loan=risk_by_loan,
+    )
+    write_eval_table(policy_tbl, table_name="policy_outcomes", scenario_name=scenario.name)
 
     # Frontier
     frontier_count, _ = uplift_frontier(uplift_scored, budget_type="count",

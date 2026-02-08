@@ -63,15 +63,17 @@ NB: outputs are pushed to `projects.lendy-graduation-retention.outputs`. To upda
 
 For quick tests (<5min) run:
 
+Note: 1500 customers is used as this has minimal chance of returning a single y class. Whereas with 800 customers ~ 1 in 10 runs fail.
+
 Just base scenario, small dataset:
 `python -m projects.lendy-graduation-retention.pipeline --scenarios base --n-customers 1500 --months-max 24`
 
 Base + high_prime, even smaller:
-`python -m projects.lendy-graduation-retention.pipeline --scenarios base,high_prime --n-customers 800 --months-max 18`
+`python -m projects.lendy-graduation-retention.pipeline --scenarios base,high_prime --n-customers 1500 --months-max 18`
 
 Base with some messy data
-`python -m projects.lendy-graduation-retention.pipeline --scenarios base --n-customers 800 --months-max 12 --messy-level 1`
+`python -m projects.lendy-graduation-retention.pipeline --scenarios base --n-customers 1500 --months-max 12 --messy-level 1`
 
 Base with extra messy data
-`python -m projects.lendy-graduation-retention.pipeline --scenarios base --months-max 12 --asof-month 6 --messy-level 2`
+`python -m projects.lendy-graduation-retention.pipeline --scenarios base --n-customers 1500 --months-max 12 --asof-month 6 --messy-level 2`
 

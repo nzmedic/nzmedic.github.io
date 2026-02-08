@@ -1,10 +1,10 @@
 scenario_name,model_name,metric_name,metric_value,notes
-base,hazard_model,AUC_3m,0.731449624380808,asof_month=6
-base,hazard_model,Calib_MAE_3m,0.00813914742279466,decile-calibration asof_month=6
-base,hazard_model,AUC_6m,0.7377829422585644,asof_month=6
-base,hazard_model,Calib_MAE_6m,0.013335060165561467,decile-calibration asof_month=6
-base,hazard_model,AUC_12m,0.731694388052415,asof_month=6
-base,hazard_model,Calib_MAE_12m,0.016538732505114603,decile-calibration asof_month=6
-base,uplift_dr,Naive_TreatedMinusControl_Retention,-0.005224594529719129,biased observational estimate
-base,uplift_dr,Adjusted_DR_Mean_ITE_Retention,0.0012138203323657018,doubly robust mean ITE
-base,uplift_dr,AUUC_like,35.6032058665978,uplift over random ordering (approx)
+base,hazard_model,AUC_3m,0.5438249424684081,asof_month=6
+base,hazard_model,Calib_MAE_3m,0.01225148180374671,decile-calibration asof_month=6
+base,hazard_model,AUC_6m,0.45694277963535423,asof_month=6
+base,hazard_model,Calib_MAE_6m,0.02305804631250468,decile-calibration asof_month=6
+base,hazard_model,AUC_12m,0.4575417123371088,asof_month=6
+base,hazard_model,Calib_MAE_12m,0.031826619047992326,decile-calibration asof_month=6
+base,uplift_dr,Naive_TreatedMinusControl_Retention,-0.0018821650601722473,biased observational estimate
+base,uplift_dr,Adjusted_DR_Mean_ITE_Retention,0.0016942864420299482,doubly robust mean ITE
+base,uplift_dr,AUUC_like,3.7278630329327553,uplift over random ordering (approx)

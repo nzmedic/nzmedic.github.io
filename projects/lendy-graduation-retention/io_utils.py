@@ -88,6 +88,19 @@ def stage_table_path(stage: str, table_name: str, scenario_name: Optional[str] =
 
 
 def write_stage_table(df: pd.DataFrame, stage: str, table_name: str, scenario_name: str) -> str:
+    """
+    Write stage table to the stage folder for easy retrieval by downstream stages and cockpit writers.
+    Also helpful for debugging and manual inspection of intermediate artefacts.
+
+    Args:
+        df: Stage artefact DataFrame.
+        stage: Stage name (e.g., "raw" or "clean").
+        table_name: Base table name (no scenario suffix).
+        scenario_name: Scenario identifier.
+
+    Returns:
+        File path written.
+    """
     path = stage_table_path(stage, table_name, scenario_name)
     df.to_csv(path, index=False)
     return str(path)
@@ -146,6 +159,24 @@ def write_issues_log(issues_df: pd.DataFrame, stage: str, scenario_name: str) ->
     issues_df.to_csv(path, index=False)
     return str(path)
 
+# model evaluation artefacts (risk eval, uplift eval, frontier eval, explainability eval)
+def write_eval_table(df: pd.DataFrame, table_name: str, scenario_name: str) -> str:
+    """
+    Write an evaluation artefact table to the eval stage folder.
+    This could be implemented within write_stage_table with stage="eval". Currently separated for clarity and the potential for divergent logic.
+
+    Args:
+        df: Evaluation artefact DataFrame.
+        table_name: Base table name (no scenario suffix).
+        scenario_name: Scenario identifier.
+
+    Returns:
+        File path written.
+    """
+    path = stage_table_path("eval", table_name, scenario_name)
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(path, index=False)
+    return str(path)
 
 
 # -----------------------------
