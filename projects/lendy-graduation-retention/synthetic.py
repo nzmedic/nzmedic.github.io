@@ -224,11 +224,30 @@ def generate_synthetic_portfolio(
 
     # Customers
     customer_id = np.arange(1, n_customers + 1)
+
     income = rng.lognormal(mean=np.log(70_000), sigma=0.45, size=n_customers)
     income = np.clip(income, 25_000, 250_000)
 
+    income_stability = np.clip(rng.normal(0.6, 0.18, n_customers), 0.05, 0.98)
+    tenure_months = np.clip(rng.gamma(shape=3.2, scale=18, size=n_customers), 3, 240)
+
+    introducers = np.array(["Dealer_A", "Dealer_B", "Broker_X", "Broker_Y", "Online"])
+    introducer_variants = {
+        "Dealer_A": ["Dealer A", "dealer_a", "DEALER-A", "Dealer_A ", " dealer_a"],
+        "Dealer_B": ["Dealer B", "dealer_b", "DEALER-B", "Dealer_B  "],
+        "Broker_X": ["Broker X", "broker_x", "BROKER-X", "Broker_X"],
+        "Broker_Y": ["Broker Y", "broker_y", "BROKER-Y", "Broker-Y"],
+        "Online":   ["online", "ONLINE", "On-line", "Online "],
+    }
+
+    introducer_canonical = rng.choice(introducers, size=n_customers, p=[0.25, 0.20, 0.20, 0.20, 0.15])
+    if messy_level >= 1:
+        introducer_observed = [messify_category(rng, v, introducer_variants, p=0.25) for v in introducer_canonical]
+    else:
+        introducer_observed = introducer_canonical
+
+    # Observed income: noise + rounding (level 2)
     if messy_level >= 2:
-        # Observed income: noisy + rounded to nearest $1,000 to mimic a common approach in CRMs
         income_observed = np.array(
             [add_measurement_noise(rng, v, sigma=1500.0, round_to=1000.0) for v in income],
             dtype=float
@@ -236,45 +255,25 @@ def generate_synthetic_portfolio(
     else:
         income_observed = income.copy()
 
-    # MAR: income missing more often for low stability and broker-originated customers
+    # MAR missingness (level 2): depends on stability + channel
     if messy_level >= 2:
-        
         income_mar = []
         for inc_obs, stab, intro in zip(income_observed, income_stability, introducer_canonical):
-            p = sigmoid01(-3.0 + 2.3*(0.55 - stab) + (0.9 if "Broker" in intro else 0.0))
+            p = sigmoid01(-3.0 + 2.3*(0.55 - stab) + (0.9 if "Broker" in str(intro) else 0.0))
             p = float(np.clip(p, 0.0, 0.30))
             income_mar.append(maybe_set_missing_mar(rng, inc_obs, p))
         income_observed = np.array(income_mar, dtype=float)
-
-    income_stability = np.clip(rng.normal(0.6, 0.18, n_customers), 0.05, 0.98)
-    tenure_months = np.clip(rng.gamma(shape=3.2, scale=18, size=n_customers), 3, 240)
-
-    introducers = np.array(["Dealer_A", "Dealer_B", "Broker_X", "Broker_Y", "Online"])
-    introducer_variants = {
-    "Dealer_A": ["Dealer A", "dealer_a", "DEALER-A", "Dealer_A ", " dealer_a"],
-    "Dealer_B": ["Dealer B", "dealer_b", "DEALER-B", "Dealer_B  "],
-    "Broker_X": ["Broker X", "broker_x", "BROKER-X", "Broker_X"],
-    "Broker_Y": ["Broker Y", "broker_y", "BROKER-Y", "Broker-Y"],
-    "Online":   ["online", "ONLINE", "On-line", "Online "],
-    }
-
-    introducer_canonical = rng.choice(introducers, size=n_customers, p=[0.25, 0.20, 0.20, 0.20, 0.15])
-    if messy_level >= 1:
-        introducer_observed = [
-            messify_category(rng, v, introducer_variants, p=0.25) for v in introducer_canonical
-        ]
-    else:
-        introducer_observed = introducer_canonical
 
     base_score = np.clip(rng.normal(590, 55, n_customers), 450, 780)
 
     customers_df = pd.DataFrame({
         "customer_id": customer_id,
-        "income": income_observed,  # observed income with messiness if enabled, otherwise same as true income
-        "income": income, # true (clean) income without messiness
+        "income": income_observed,                 # observed
+        "income_true": income,                     # truth
         "income_stability": income_stability,
         "tenure_months": tenure_months,
         "introducer": introducer_observed,
+        "introducer_canonical": introducer_canonical,
         "base_credit_score": base_score
     })
 
@@ -318,15 +317,31 @@ def generate_synthetic_portfolio(
         base_sc = float(cust.loc[cid, "base_credit_score"])
         stab = float(cust.loc[cid, "income_stability"])
         ten = float(cust.loc[cid, "tenure_months"])
-        inc = float(cust.loc[cid, "income"])
+        inc_obs  = cust.loc[cid, "income"] 
+
+        # NOTE:
+        # We use the true income here to determine the latent type and outcomes, but the observed income (with noise, rounding, and MAR missingness) 
+        # is what gets reported to models and can be used as a feature. This creates a realistic scenario where the underlying risk is driven 
+        # by the true income, but the model has to learn from the noisy observed income.
+        inc_true = float(cust.loc[cid, "income_true"])
+
+        # defensive treatment of extreme outliers. In practice these would be rare but possible
+        if not np.isfinite(inc_true):
+            inc_true = 70_000.0  # neutral fallback (should be rare)
+
 
         term = int(r["term_months"])
         bal0 = float(r["orig_balance"])
         apr = float(r["apr"])
         orig_m = int(r["origination_month"])
 
-        z_leave = (base_sc - 600)/55 + (math.log(inc) - math.log(70_000))/0.6 + (ten - 48)/60
-        z_stay  = -(base_sc - 600)/70 - (math.log(inc) - math.log(70_000))/0.8 - (ten - 48)/80
+        # propensity to be each latent type i.e. propensity to graduate if untreated (leave), propensity to graduate if treated (stay), 
+        # and treatment effect (persuadable vs do-not-disturb)
+        # NOTE:
+            # The specific functional form and coefficients are somewhat arbitrary in practice these would be modelled as a function of the features.
+            # But for this demo we hardcode some relationships to ensure the types are meaningfully distributed and correlated with features in a way that allows for testing. 
+        z_leave = (base_sc - 600)/55 + (math.log(inc_true) - math.log(70_000))/0.6 + (ten - 48)/60
+        z_stay  = -(base_sc - 600)/70 - (math.log(inc_true) - math.log(70_000))/0.8 - (ten - 48)/80
         z_pers  = +1.2*(stab - 0.6) - 0.3*((base_sc - 600)/80) + 0.2*((ten - 48)/100)
         z_dnd   = -0.8*(stab - 0.6) + 0.1*((base_sc - 600)/90)
 
@@ -355,7 +370,7 @@ def generate_synthetic_portfolio(
             market_rate = (base_market_rate + scenario.prime_rate_shift_bps/10_000.0) \
                           + market_rate_trend * month_asof + rng.normal(0, 0.002)
 
-            util = balance / (inc / 12.0)
+            util = balance / (inc_obs / 12.0)
             p_delin = sigmoid(
                 -2.2
                 + 2.0*(0.65 - stab)
@@ -471,7 +486,7 @@ def generate_synthetic_portfolio(
                 "prime_eligible": prime_eligible,
                 "dpd30": dpd30,
                 "late_count_roll": late_count_rolling,
-                "income": inc,
+                "income": inc_obs, # observed (noisy, with MAR missingness)
                 "income_stability": stab,
                 "tenure_months": ten,
                 "introducer": intro_obs, # observed (messy), intro_canon contains ground truth if required

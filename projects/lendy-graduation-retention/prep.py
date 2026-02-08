@@ -6,6 +6,35 @@ import pandas as pd
 import numpy as np
 from typing import Tuple
 
+from .cleaning import clean_and_log, CleaningConfig
+
+def build_clean_tables_and_issues(
+    *,
+    customers_raw: pd.DataFrame,
+    loans_raw: pd.DataFrame,
+    monthly_perf_raw: pd.DataFrame,
+    config: CleaningConfig | None = None,
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """
+    Build cleaned tables from raw inputs and return an issues log.
+
+    Args:
+        customers_raw: Raw customers table.
+        loans_raw: Raw loans table.
+        monthly_perf_raw: Raw monthly performance table.
+        config: Optional cleaning configuration.
+
+    Returns:
+        (customers_clean, loans_clean, monthly_perf_clean, issues_log)
+    """
+    return clean_and_log(
+        customers_raw=customers_raw,
+        loans_raw=loans_raw,
+        monthly_perf_raw=monthly_perf_raw,
+        config=config,
+    )
+
+
 def build_clean_tables(
     *,
     customers_raw: pd.DataFrame,
@@ -13,16 +42,22 @@ def build_clean_tables(
     monthly_perf_raw: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
-    Step 1: raw/clean separation.
-    For now this is a pass-through so the pipeline contract is established.
-    Step 2 will implement real cleaning + data quality reporting.
+    Backward-compatible wrapper returning only cleaned tables.
+
+    Args:
+        customers_raw: Raw customers table.
+        loans_raw: Raw loans table.
+        monthly_perf_raw: Raw monthly performance table.
+
+    Returns:
+        (customers_clean, loans_clean, monthly_perf_clean)
     """
-    customers_clean = customers_raw.copy()
-    loans_clean = loans_raw.copy()
-    monthly_perf_clean = monthly_perf_raw.copy()
-
-    return customers_clean, loans_clean, monthly_perf_clean
-
+    customers_clean, loans_clean, perf_clean, _issues = build_clean_tables_and_issues(
+        customers_raw=customers_raw,
+        loans_raw=loans_raw,
+        monthly_perf_raw=monthly_perf_raw,
+    )
+    return customers_clean, loans_clean, perf_clean
 
 
 def add_time_varying_features(perf_df: pd.DataFrame) -> pd.DataFrame:
@@ -56,11 +91,14 @@ def add_time_varying_features(perf_df: pd.DataFrame) -> pd.DataFrame:
 
     df["bal_lag1"] = df.groupby("loan_id")["balance"].shift(1)
     df["bal_change1"] = (df["balance"] - df["bal_lag1"]).fillna(0.0)
-    df["paydown_rate1"] = (-df["bal_change1"] / (df["bal_lag1"].replace(0, np.nan))).fillna(0.0)
-    df["paydown_rate1"] = df["paydown_rate1"].clip(-0.5, 1.0)
+    df["paydown_rate1"] = (-df["bal_change1"] / (df["bal_lag1"].replace(0, np.nan))).replace([np.inf, -np.inf], np.nan)
+    df["paydown_rate1"] = df["paydown_rate1"].fillna(0.0).clip(-0.5, 1.0)
 
-    df["util_proxy"] = df["balance"] / (df["income"] / 12.0)
-    df["util_proxy"] = df["util_proxy"].clip(0, 10)
+    denom = (df["income"] / 12.0).replace(0, np.nan)
+    df["util_proxy"] = (df["balance"] / denom).replace([np.inf, -np.inf], np.nan)
+    # Guarantee reasonable range and fill any remaining missing with median. 
+    # In practice we would want to investigate and handle any extreme outliers separately, but this is a simple approach for the demo.
+    df["util_proxy"] = df["util_proxy"].clip(0, 10).fillna(df["util_proxy"].median())
 
     df["rate_diff_bps"] = (df["apr"] - df["market_rate"]) * 10_000.0
     df["introducer"] = df["introducer"].astype("category")

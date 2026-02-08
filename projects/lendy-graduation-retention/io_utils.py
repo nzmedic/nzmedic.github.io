@@ -130,6 +130,23 @@ def write_dq_rollup(rollup_df: pd.DataFrame, stage: str, scenario_name: str) -> 
     rollup_df.to_csv(path, index=False)
     return str(path)
 
+def write_issues_log(issues_df: pd.DataFrame, stage: str, scenario_name: str) -> str:
+    """
+    Write a structured issues log for a pipeline stage.
+
+    Args:
+        issues_df: Issues log DataFrame (rule-based).
+        stage: Stage name, typically "clean".
+        scenario_name: Scenario identifier used in filename.
+
+    Returns:
+        File path written.
+    """
+    path = stage_table_path(stage, f"issues_log_{stage}", scenario_name)
+    issues_df.to_csv(path, index=False)
+    return str(path)
+
+
 
 # -----------------------------
 # Cockpit writers

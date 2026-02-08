@@ -20,7 +20,13 @@ The use case focuses on **retaining high-quality vehicle-loan customers** who ar
 | models   | Fitted artefacts               | pickles, coefficients             |
 | eval     | Evidence                       | metrics, lift tables, calibration |
 
+# Process
 
+Customers table = source of truth for static attributes
+
+Perf table = time-varying facts that inherit static attributes
+
+Cleaning happens once, then gets pushed down
 
 
 ## Scenarios
@@ -65,4 +71,7 @@ Base + high_prime, even smaller:
 
 Base with some messy data
 `python -m projects.lendy-graduation-retention.pipeline --scenarios base --n-customers 800 --months-max 12 --messy-level 1`
+
+Base with extra messy data
+`python -m projects.lendy-graduation-retention.pipeline --scenarios base --months-max 12 --asof-month 6 --messy-level 2`
 

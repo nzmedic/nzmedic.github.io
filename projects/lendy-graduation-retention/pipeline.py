@@ -15,12 +15,21 @@ from .config import (
 )
 from .synthetic import generate_synthetic_portfolio
 from .prep import (
-    build_clean_tables,
+    build_clean_tables_and_issues,
     add_time_varying_features,
     build_discrete_time_hazard_dataset,
     time_based_split,
     build_decision_dataset_for_uplift
 )
+from .io_utils import (
+    cockpit_outputs_dir, 
+    write_outputs, 
+    write_stage_table, 
+    write_dq_summary, 
+    write_dq_rollup, 
+    write_issues_log
+)
+
 from .dq import profile_many, rollup_table_profile
 
 from .models import (
@@ -38,13 +47,6 @@ from .models import (
 from .explain import (
     explain_risk_model_global_local,
     explain_uplift_via_surrogate
-)
-from .io_utils import (
-    cockpit_outputs_dir,
-    write_outputs,
-    write_stage_table,
-    write_dq_summary,
-    write_dq_rollup,
 )
 
 def parse_args() -> argparse.Namespace:
@@ -193,11 +195,14 @@ def run_one_scenario(
     write_dq_rollup(raw_rollup, stage="raw", scenario_name=scenario.name)
 
     # B) pass through clean datasts and write stage artefacts (per scenario)
-    customers_clean, loans_clean, perf_clean = build_clean_tables(
+    customers_clean, loans_clean, perf_clean, issues_clean = build_clean_tables_and_issues(
         customers_raw=customers_raw,
         loans_raw=loans_raw,
         monthly_perf_raw=perf_raw,
     )
+
+    issues_clean.insert(0, "scenario_name", scenario.name)
+    write_issues_log(issues_clean, stage="clean", scenario_name=scenario.name)
 
     write_stage_table(customers_clean, "clean", "customers_clean", scenario.name)
     write_stage_table(loans_clean, "clean", "loans_clean", scenario.name)
@@ -235,6 +240,24 @@ def run_one_scenario(
         )
 
     # D) hazard models
+
+    # assert features are not missing before modeling. Simple approach to identifying root cause of small batch failures in testing
+    # TODO: . Implement more robust checks and handling for this. For example could check for NaNs immediately after feature engineering and before train/validation split, and could also add checks for expected column presence and data types.
+    # could also add an assert here to check that the split resulted in non-empty train and validation sets.
+    feature_cols = [
+        "loan_age_month", "term_months",
+        "balance", "credit_score", "prime_eligible",
+        "dpd30_roll3", "dpd30_roll6", "late_count_roll",
+        "score_trend3", "paydown_rate1", "util_proxy",
+        "rate_diff_bps",
+        "income", "income_stability", "tenure_months",
+    ]
+
+    bad = train_h[feature_cols].isna().mean().sort_values(ascending=False)
+    bad = bad[bad > 0]
+    if len(bad) > 0:
+        raise ValueError(f"NaNs remain in hazard features:\n{bad}")
+
     hazard_models = fit_hazard_models(train_h, valid_h)
     hazard_prod = hazard_models["hazard_gbm"]
 
