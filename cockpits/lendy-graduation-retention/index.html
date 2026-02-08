@@ -378,29 +378,46 @@
                     <a class="btn btn-sm btn-outline-secondary" id="dlMetricsCsv" href="#" download>Download metrics</a>
                 </div>
 
-                <div class="row g-3 mt-2">
-                    <div class="col-12 col-md-4">
-                        <div class="border rounded p-3 bg-light h-100">
-                            <div class="text-muted small">Survival model</div>
-                            <div class="h5 mb-1" id="metricSurvival">—</div>
-                            <div class="text-muted small" id="metricSurvivalSub">—</div>
+                <!-- Survival model -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="text-muted">Survival model</div>
+                        <div class="h5 mb-1">
+                            C-index: <span id="mv_surv_cindex">—</span>
                         </div>
+                        <div class="text-muted">
+                            AUC (12m): <span id="mv_surv_auc12">—</span>
+                        </div>
+                        <a id="mv_surv_csv" class="small" href="#" target="_blank" rel="noopener">See metrics CSV</a>
                     </div>
-
-                    <div class="col-12 col-md-4">
-                        <div class="border rounded p-3 bg-light h-100">
-                            <div class="text-muted small">Uplift model</div>
-                            <div class="h5 mb-1" id="metricUplift">—</div>
-                            <div class="text-muted small" id="metricUpliftSub">—</div>
+                </div>
+                
+                <!-- Uplift model -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="text-muted">Uplift model</div>
+                        <div class="h5 mb-1">
+                            AUUC: <span id="mv_uplift_auuc">—</span>
                         </div>
+                        <div class="text-muted">
+                            Incremental NII (TopUplift): <span id="mv_uplift_nii">—</span>
+                        </div>
+                        <a id="mv_uplift_csv" class="small" href="#" target="_blank" rel="noopener">See metrics CSV</a>
                     </div>
-
-                    <div class="col-12 col-md-4">
-                        <div class="border rounded p-3 bg-light h-100">
-                            <div class="text-muted small">Bias check</div>
-                            <div class="h5 mb-1" id="metricBias">—</div>
-                            <div class="text-muted small" id="metricBiasSub">—</div>
+                </div>
+                
+                <!-- Bias demo -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="text-muted">Bias check</div>
+                        <div class="h5 mb-1">Bias demo</div>
+                        <div class="text-muted">
+                            Naive: <span id="mv_bias_naive">—</span> · Adjusted: <span id="mv_bias_adj">—</span>
                         </div>
+                        <div class="text-muted">
+                            Gap: <span id="mv_bias_gap">—</span>
+                        </div>
+                        <a id="mv_bias_csv" class="small" href="#" target="_blank" rel="noopener">See metrics CSV</a>
                     </div>
                 </div>
 
