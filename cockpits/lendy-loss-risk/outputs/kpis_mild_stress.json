@@ -1,7 +1,0 @@
-{
-  "balance": 380000000.0,
-  "expected_loss": 7979400.0,
-  "loss_rate": 0.02099842105263158,
-  "expected_default_balance": 20540000.0,
-  "expected_default_count": 0.0
-}
