@@ -170,10 +170,10 @@
                             <div class="border rounded p-3 bg-light">
                                 <div class="kicker mb-2">Quick intuition</div>
                                 <ul class="mb-0 small">
-                                    <li><span class="fw-semibold">Right-shifted</span> distribution = more graduation pressure.
-                                    </li>
-                                    <li><span class="fw-semibold">Top decile</span> should contain a big share of expected
-                                        graduations.</li>
+                                    <li><span class="fw-semibold">X-axis</span>: predicted P(graduate in 12m) for each loan.</li>
+                                    <li><span class="fw-semibold">Bars</span>: how many loans fall into each probability bucket.</li>
+                                    <li><span class="fw-semibold">Right-heavy</span> histogram = more loans are near-term graduation risk.</li>
+                                    <li><span class="fw-semibold">Wide</span> histogram = risk is unevenly distributed across loans.</li>
                                 </ul>
                             </div>
                         </div>
@@ -206,6 +206,7 @@
                                         targets.</li>
                                     <li><span class="fw-semibold">Sure things</span>: high μ0 but low ITE → avoid discount.</li>
                                     <li><span class="fw-semibold">Lost causes</span>: low μ0 and low ITE → avoid discount.</li>
+                                    
                                 </ul>
                             </div>
                         </div>
@@ -236,6 +237,7 @@
                                     <li><span class="fw-semibold">Persuadables</span>: offer changes behaviour.</li>
                                     <li><span class="fw-semibold">Sure things</span>: would stay anyway.</li>
                                     <li><span class="fw-semibold">Lost causes</span>: will leave anyway.</li>
+                                    <li><span class="fw-semibold">Do dot disturb</span>: remainder where offer would not change behaviour.</li>
                                 </ul>
                             </div>
                         </div>
@@ -251,7 +253,7 @@
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
                                 <h5 class="card-title mb-1">Budget Frontier</h5>
-                                <div class="text-muted small">Expected incremental NII as budget increases; dot shows current
+                                <div class="text-muted small">Expected incremental NII as incentive budget increases. The dot shows current
                                     selection.</div>
                                 <a class="small text-decoration-none d-inline-flex mt-2" data-bs-toggle="collapse"
                                     href="#howFrontier" role="button" aria-expanded="false">
@@ -262,9 +264,11 @@
                         <div class="collapse mt-3" id="howFrontier">
                             <div class="border rounded p-3 bg-light">
                                 <div class="kicker mb-2">Quick intuition</div>
+                                <div class="text-muted small">Increasing incentive budget increases AUM retention but at diminishing returns</div>
                                 <ul class="mb-0 small">
-                                    <li><span class="fw-semibold">Steep early</span> = easy wins.</li>
-                                    <li><span class="fw-semibold">Flattening</span> = diminishing returns.</li>
+                                    
+                                    <li><span class="fw-semibold">Steep climb</span> = easy wins.</li>
+                                    <li><span class="fw-semibold">Flattening</span> = incremental NII gains decay.</li>
                                 </ul>
                             </div>
                         </div>
@@ -374,29 +378,46 @@
                     <a class="btn btn-sm btn-outline-secondary" id="dlMetricsCsv" href="#" download>Download metrics</a>
                 </div>
 
-                <div class="row g-3 mt-2">
-                    <div class="col-12 col-md-4">
-                        <div class="border rounded p-3 bg-light h-100">
-                            <div class="text-muted small">Survival model</div>
-                            <div class="h5 mb-1" id="metricSurvival">—</div>
-                            <div class="text-muted small" id="metricSurvivalSub">—</div>
+                <!-- Survival model -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="text-muted">Survival model</div>
+                        <div class="h5 mb-1">
+                            C-index: <span id="mv_surv_cindex">—</span>
                         </div>
+                        <div class="text-muted">
+                            AUC (12m): <span id="mv_surv_auc12">—</span>
+                        </div>
+                        <a id="mv_surv_csv" class="small" href="#" target="_blank" rel="noopener">See metrics CSV</a>
                     </div>
-
-                    <div class="col-12 col-md-4">
-                        <div class="border rounded p-3 bg-light h-100">
-                            <div class="text-muted small">Uplift model</div>
-                            <div class="h5 mb-1" id="metricUplift">—</div>
-                            <div class="text-muted small" id="metricUpliftSub">—</div>
+                </div>
+                
+                <!-- Uplift model -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="text-muted">Uplift model</div>
+                        <div class="h5 mb-1">
+                            AUUC: <span id="mv_uplift_auuc">—</span>
                         </div>
+                        <div class="text-muted">
+                            Incremental NII (TopUplift): <span id="mv_uplift_nii">—</span>
+                        </div>
+                        <a id="mv_uplift_csv" class="small" href="#" target="_blank" rel="noopener">See metrics CSV</a>
                     </div>
-
-                    <div class="col-12 col-md-4">
-                        <div class="border rounded p-3 bg-light h-100">
-                            <div class="text-muted small">Bias check</div>
-                            <div class="h5 mb-1" id="metricBias">—</div>
-                            <div class="text-muted small" id="metricBiasSub">—</div>
+                </div>
+                
+                <!-- Bias demo -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="text-muted">Bias check</div>
+                        <div class="h5 mb-1">Bias demo</div>
+                        <div class="text-muted">
+                            Naive: <span id="mv_bias_naive">—</span> · Adjusted: <span id="mv_bias_adj">—</span>
                         </div>
+                        <div class="text-muted">
+                            Gap: <span id="mv_bias_gap">—</span>
+                        </div>
+                        <a id="mv_bias_csv" class="small" href="#" target="_blank" rel="noopener">See metrics CSV</a>
                     </div>
                 </div>
 
@@ -434,9 +455,9 @@
 
     <!-- Scripts: match Vehicle Incentives pattern -->
     <script type="module" src="/cockpits/shared/cockpit-shell.js"></script>
+    <script type="module" src="/cockpits/shared/cockpit-utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
-    <script type="module" src="/js/cockpit.js"></script>
 
     <!-- pull tooltip -->
     <script>

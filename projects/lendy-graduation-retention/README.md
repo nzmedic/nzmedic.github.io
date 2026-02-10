@@ -10,6 +10,25 @@ The use case focuses on **retaining high-quality vehicle-loan customers** who ar
 
 ---
 
+## Folder structure
+
+| Stage    | Purpose                        | Intended Contents                 |
+| -------- | ------------------------------ | --------------------------------- |
+| raw      | What the source system gave us | messy, inconsistent, delayed data |
+| clean    | What we trust for modelling    | imputed, standardised, validated  |
+| features | Model-ready tables             | hazard_df, uplift_snapshots       |
+| models   | Fitted artefacts               | pickles, coefficients             |
+| eval     | Evidence                       | metrics, lift tables, calibration |
+
+# Process
+
+Customers table = source of truth for static attributes
+
+Perf table = time-varying facts that inherit static attributes
+
+Cleaning happens once, then gets pushed down
+
+
 ## Scenarios
 
 Scenarios are defined in `config.py` and currently include:
@@ -33,8 +52,28 @@ Each scenario produces a consistent set of CSV files suitable for a **scenario s
 
 
 
+
 ## Run
 
-Execute the following from the repo root
+Execute the following from the repo root:
 
-python -m projects.lendy-graduation-retention.pipeline
+`python -m projects.lendy-graduation-retention.pipeline`
+
+NB: outputs are pushed to `projects.lendy-graduation-retention.outputs`. To update the cockpit copy outputs to `cockpits.lendy-graduation-retention.outputs`
+
+For quick tests (<5min) run:
+
+Note: 1500 customers is used as this has minimal chance of returning a single y class. Whereas with 800 customers ~ 1 in 10 runs fail.
+
+Just base scenario, small dataset:
+`python -m projects.lendy-graduation-retention.pipeline --scenarios base --n-customers 1500 --months-max 24`
+
+Base + high_prime, even smaller:
+`python -m projects.lendy-graduation-retention.pipeline --scenarios base,high_prime --n-customers 1500 --months-max 18`
+
+Base with some messy data
+`python -m projects.lendy-graduation-retention.pipeline --scenarios base --n-customers 1500 --months-max 12 --messy-level 1`
+
+Base with extra messy data
+`python -m projects.lendy-graduation-retention.pipeline --scenarios base --n-customers 1500 --months-max 12 --asof-month 6 --messy-level 2`
+

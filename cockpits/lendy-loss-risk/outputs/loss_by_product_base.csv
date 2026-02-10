@@ -1,4 +1,0 @@
-scenario_name,product,balance,expected_loss,expected_default_balance,expected_defaults_count,loss_rate
-base,vehicle,270000000,4515000.0,12900000.0,933.3333333333334,0.01672222222222222
-base,small_business,30000000,945000.0,2100000.0,52.5,0.0315
-base,mortgage,80000000,120000.0,800000.0,3.2,0.0015
