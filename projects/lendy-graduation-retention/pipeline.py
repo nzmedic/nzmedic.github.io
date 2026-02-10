@@ -383,6 +383,7 @@ def run_one_scenario(
 # TODO: Guardrails included so time-based split months remain valid for small test runs but do not currently but risk remains of invalid splits if 
 # user sets asof_month or decision_month too high relative to months_max. Could add explicit checks and warnings for this in parse_args() or run_one_scenario().
 # Could also consider adding a "--fast" flag that sets a consistent combination of n_customers, months_max, and split months for quick testing without needing to adjust multiple parameters.
+# also The guardrail computes clamped asof_month/decision_month values earlier in main, but this call still forwards the raw CLI values, so large user-provided months can exceed the simulated horizon and produce empty hazard/uplift slices despite the intended protection; this makes the new CLI flow fail for small --months-max or aggressive split settings.
 
 def main():
     """
@@ -414,8 +415,8 @@ def main():
             sc,
             out_dir=out_dir,
             seed=args.seed,
-            asof_month=args.asof_month,
-            decision_month=args.decision_month,
+            asof_month=asof_month,
+            decision_month=decision_month,
             uplift_horizon_months=args.uplift_horizon_months,
             n_customers=args.n_customers,
             months_max=args.months_max,
