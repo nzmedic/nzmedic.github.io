@@ -44,7 +44,7 @@ def ensure_dir(path: Path) -> None:
 def cockpit_outputs_dir() -> str:
     """Return (and create) the cockpit outputs directory path."""
     out = repo_root() / "cockpits" / "lendy-graduation-retention" / "outputs"
-    out.mkdir(parents=True, exist_ok=True)
+    ensure_dir(out)
     return str(out)
 
 
@@ -53,18 +53,15 @@ def cockpit_outputs_dir() -> str:
 # -----------------------------
 
 def project_outputs_root() -> Path:
-    """
-    Project outputs root:
-        <repo_root>/projects/lendy-graduation-retention/outputs
-    """
-    return repo_root() / "projects" / "lendy-graduation-retention" / "outputs"
+    """Backward-compatible alias for the canonical cockpit outputs root."""
+    return Path(cockpit_outputs_dir())
 
 
 def stage_dir(stage: str) -> Path:
     """
     e.g. stage_dir("raw") -> .../outputs/raw
     """
-    out = project_outputs_root() / stage
+    out = Path(cockpit_outputs_dir()) / stage
     ensure_dir(out)
     return out
 
@@ -76,9 +73,9 @@ def stage_table_path(stage: str, table_name: str, scenario_name: Optional[str] =
 
     Examples:
         stage_table_path("raw", "monthly_perf_raw", "base")
-        -> .../outputs/raw/monthly_perf_raw_base.csv
+        -> .../cockpits/lendy-graduation-retention/outputs/raw/monthly_perf_raw_base.csv
         stage_table_path("clean", "loans_clean", "high_prime")
-        -> .../outputs/clean/loans_clean_high_prime.csv
+        -> .../cockpits/lendy-graduation-retention/outputs/clean/loans_clean_high_prime.csv
     """
     if scenario_name:
         fname = f"{table_name}_{scenario_name}.csv"

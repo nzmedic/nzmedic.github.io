@@ -51,6 +51,8 @@ how to intervene selectively, credibly, and at scale without destroying margin o
 
 [Open the Decision Cockpit](/cockpits/lendy-graduation-retention/)
 
+> Local run note: pipeline artefacts are generated into `cockpits/lendy-graduation-retention/outputs` (including `raw/`, `clean/`, and `eval/`) when you run `python -m projects.lendy-graduation-retention.pipeline`.
+
 ---
 
 ## Step 1: Decision Framing

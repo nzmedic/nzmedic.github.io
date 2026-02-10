@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from typing import List
 from pathlib import Path
 
+from .io_utils import repo_root
+
 # Classes and functions for configuration and shared constants across the project.
 
 @dataclass(frozen=True)
@@ -39,7 +41,8 @@ class Paths:
 
     @property
     def cockpit_dir(self) -> Path:
-        return self.outputs_root / "cockpit"
+        """Legacy alias for the cockpit outputs root."""
+        return self.outputs_root
 
 @dataclass(frozen=True)
 class Scenario:
@@ -70,7 +73,7 @@ def get_paths() -> Paths:
         Paths instance containing project and outputs roots.
     """
     project_root = Path(__file__).resolve().parents[0]
-    outputs_root = project_root / "outputs"
+    outputs_root = repo_root() / "cockpits" / "lendy-graduation-retention" / "outputs"
     return Paths(project_root=project_root, outputs_root=outputs_root)
 
 
@@ -110,4 +113,3 @@ BASE_FEATURE_COLS = [
     "income", "income_stability", "tenure_months",
     "introducer"
 ]
-
