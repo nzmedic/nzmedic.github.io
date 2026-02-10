@@ -1,4 +1,4 @@
-# build output when moving to github actions
+# TODO: build output when moving to github actions
 _site/
 
 # local python env
@@ -7,5 +7,4 @@ __pycache__/
 *.pyc
 
 # generated artefacts
-projects/lendy-graduation-retention/outputs
-projects/lendy-loss-risk/outputs/
+**/outputs/
