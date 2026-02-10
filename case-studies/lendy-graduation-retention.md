@@ -49,6 +49,8 @@ By the time leadership notices the impact, the best assets have already left.
 Lendy’s executive team recognised that this was not a **prediction problem**. It was a **decision problem**:  
 how to intervene selectively, credibly, and at scale without destroying margin or fairness.
 
+[Open the Decision Cockpit](/cockpits/lendy-graduation-retention/)
+
 ---
 
 ## Step 1: Decision Framing
