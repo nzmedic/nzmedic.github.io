@@ -59,7 +59,7 @@ Execute the following from the repo root:
 
 `python -m projects.lendy-graduation-retention.pipeline`
 
-NB: outputs are pushed to `projects.lendy-graduation-retention.outputs`. To update the cockpit copy outputs to `cockpits.lendy-graduation-retention.outputs`
+NB: pipeline outputs are written directly to `cockpits/lendy-graduation-retention/outputs` (including `raw/`, `clean/`, and `eval/` subfolders), so no manual copy step is required.
 
 For quick tests (<5min) run:
 
