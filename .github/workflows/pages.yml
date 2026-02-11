@@ -3,6 +3,8 @@ name: Build & Deploy Cockpit to Pages
 on:
   push:
     branches: ["main"]
+  pull_request:
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -15,8 +17,58 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  detect-changes:
     runs-on: ubuntu-latest
+    outputs:
+      lendy_loss_risk: ${{ steps.filter.outputs.lendy_loss_risk }}
+      lendy_graduation_retention: ${{ steps.filter.outputs.lendy_graduation_retention }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect changed project paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            lendy_loss_risk:
+              - 'projects/lendy-loss-risk/**'
+              - 'cockpits/lendy-loss-risk/**'
+              - 'cockpits/shared/**'
+              - 'assets/**'
+              - 'js/**'
+            lendy_graduation_retention:
+              - 'projects/lendy-graduation-retention/**'
+              - 'cockpits/lendy-graduation-retention/**'
+              - 'cockpits/shared/**'
+              - 'assets/**'
+              - 'js/**'
+
+  build-projects:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: lendy-loss-risk
+            changed_output: lendy_loss_risk
+            requirements_file: projects/lendy-loss-risk/requirements.txt
+            output_dir: projects/lendy-loss-risk/outputs
+            site_output_dir: cockpits/lendy-loss-risk/outputs
+            run_cmd: |
+              python -m scripts.run_cockpit --scenario base
+              python -m scripts.run_cockpit --scenario mild_stress
+              python -m scripts.run_cockpit --scenario severe_stress
+            working_dir: projects/lendy-loss-risk
+          - id: lendy-graduation-retention
+            changed_output: lendy_graduation_retention
+            requirements_file: projects/lendy-graduation-retention/requirements.txt
+            output_dir: cockpits/lendy-graduation-retention/outputs
+            site_output_dir: cockpits/lendy-graduation-retention/outputs
+            run_cmd: |
+              python projects/lendy-graduation-retention/pipeline.py
+            working_dir: .
 
     steps:
       - name: Checkout
@@ -27,126 +79,81 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Restore cached outputs
+        id: cache-outputs
+        uses: actions/cache@v4
+        with:
+          path: ${{ matrix.output_dir }}
+          key: ${{ runner.os }}-${{ matrix.id }}-outputs-${{ hashFiles(matrix.requirements_file, format('projects/{0}/**', matrix.id)) }}
+
+      - name: Decide whether to rebuild project outputs
+        id: decision
+        env:
+          PROJECT_CHANGED: ${{ needs.detect-changes.outputs[matrix.changed_output] }}
+          CACHE_HIT: ${{ steps.cache-outputs.outputs.cache-hit }}
+        run: |
+          if [ "$PROJECT_CHANGED" = "true" ] || [ "$CACHE_HIT" != "true" ]; then
+            echo "rebuild=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "rebuild=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Install dependencies
+        if: steps.decision.outputs.rebuild == 'true'
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r "${{ matrix.requirements_file }}"
 
-      - name: Run cockpit (base + stress scenarios)
+      - name: Build project outputs
+        if: steps.decision.outputs.rebuild == 'true'
+        working-directory: ${{ matrix.working_dir }}
+        run: ${{ matrix.run_cmd }}
+
+      - name: Stage outputs artifact
         run: |
-          python scripts/run_cockpit.py --scenario base
-          python scripts/run_cockpit.py --scenario mild_stress
-          python scripts/run_cockpit.py --scenario severe_stress
+          rm -rf artifact
+          mkdir -p "artifact/${{ matrix.site_output_dir }}"
+          cp -R "${{ matrix.output_dir }}/." "artifact/${{ matrix.site_output_dir }}/"
+
+      - name: Upload project outputs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: outputs-${{ matrix.id }}
+          path: artifact/
+          if-no-files-found: error
+
+  build-site:
+    needs: build-projects
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download lendy-loss-risk outputs
+        uses: actions/download-artifact@v4
+        with:
+          name: outputs-lendy-loss-risk
+          path: .
+
+      - name: Download lendy-graduation-retention outputs
+        uses: actions/download-artifact@v4
+        with:
+          name: outputs-lendy-graduation-retention
+          path: .
 
       - name: Build static site (_site)
         run: |
           rm -rf _site
-          mkdir -p _site/outputs
-          cp -r outputs/* _site/outputs/ || true
-
-          # Simple landing page
-          cat > _site/index.html << 'EOF'
-          <!doctype html>
-          <html lang="en">
-          <head>
-            <meta charset="utf-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <title>Lendy Loss-Risk Decision Cockpit (MVP)</title>
-            <style>
-              body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 2rem; max-width: 1100px; }
-              h1 { margin-bottom: 0.25rem; }
-              .sub { color: #555; margin-top: 0; }
-              .grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
-              @media (min-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
-              .card { border: 1px solid #ddd; border-radius: 12px; padding: 1rem; }
-              img { max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #eee; }
-              code { background: #f6f6f6; padding: 0.15rem 0.35rem; border-radius: 6px; }
-              ul { margin-top: 0.5rem; }
-              a { color: inherit; }
-              .small { font-size: 0.95rem; color: #444; }
-            </style>
-          </head>
-          <body>
-            <h1>Lendy Loss-Risk Decision Cockpit (MVP)</h1>
-            <p class="sub">Generated automatically via GitHub Actions → published to GitHub Pages.</p>
-
-            <div class="card">
-              <p class="small">
-                This cockpit uses a minimum viable model stack:
-                <b>PD</b> (how many fail), <b>Timing</b> (when they fail), <b>LGD</b> (how costly),
-                plus simple <b>scenario multipliers</b>. Outputs below are generated from the CSV inputs in <code>/data</code>.
-              </p>
-            </div>
-
-            <h2>Scenarios</h2>
-
-            <h3>Base</h3>
-            <div class="grid">
-              <div class="card">
-                <h4>Expected loss by product</h4>
-                <img src="outputs/loss_by_product_base.png" alt="Loss by product (base)">
-              </div>
-              <div class="card">
-                <h4>Expected loss over time</h4>
-                <img src="outputs/loss_over_time_base.png" alt="Loss over time (base)">
-              </div>
-            </div>
-            <div class="card">
-              <h4>Downloads (base)</h4>
-              <ul>
-                <li><a href="outputs/summary_by_product_base.csv">summary_by_product_base.csv</a></li>
-                <li><a href="outputs/summary_total_base.csv">summary_total_base.csv</a></li>
-                <li><a href="outputs/monthly_view_base.csv">monthly_view_base.csv</a></li>
-              </ul>
-            </div>
-
-            <h3>Mild stress</h3>
-            <div class="grid">
-              <div class="card">
-                <h4>Expected loss by product</h4>
-                <img src="outputs/loss_by_product_mild_stress.png" alt="Loss by product (mild stress)">
-              </div>
-              <div class="card">
-                <h4>Expected loss over time</h4>
-                <img src="outputs/loss_over_time_mild_stress.png" alt="Loss over time (mild stress)">
-              </div>
-            </div>
-            <div class="card">
-              <h4>Downloads (mild stress)</h4>
-              <ul>
-                <li><a href="outputs/summary_by_product_mild_stress.csv">summary_by_product_mild_stress.csv</a></li>
-                <li><a href="outputs/summary_total_mild_stress.csv">summary_total_mild_stress.csv</a></li>
-                <li><a href="outputs/monthly_view_mild_stress.csv">monthly_view_mild_stress.csv</a></li>
-              </ul>
-            </div>
-
-            <h3>Severe stress</h3>
-            <div class="grid">
-              <div class="card">
-                <h4>Expected loss by product</h4>
-                <img src="outputs/loss_by_product_severe_stress.png" alt="Loss by product (severe stress)">
-              </div>
-              <div class="card">
-                <h4>Expected loss over time</h4>
-                <img src="outputs/loss_over_time_severe_stress.png" alt="Loss over time (severe stress)">
-              </div>
-            </div>
-            <div class="card">
-              <h4>Downloads (severe stress)</h4>
-              <ul>
-                <li><a href="outputs/summary_by_product_severe_stress.csv">summary_by_product_severe_stress.csv</a></li>
-                <li><a href="outputs/summary_total_severe_stress.csv">summary_total_severe_stress.csv</a></li>
-                <li><a href="outputs/monthly_view_severe_stress.csv">monthly_view_severe_stress.csv</a></li>
-              </ul>
-            </div>
-
-            <hr />
-            <p class="small">
-              Tip: update <code>/data</code> inputs and push to <code>main</code> to regenerate this page.
-            </p>
-          </body>
-          </html>
-          EOF
+          mkdir -p _site
+          rsync -a ./ _site/ \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '_site' \
+            --exclude '.venv' \
+            --exclude 'artifact' \
+            --exclude '**/__pycache__' \
+            --exclude 'projects/**/outputs'
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -157,8 +164,9 @@ jobs:
           path: _site
 
   deploy:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    needs: build
+    needs: build-site
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
