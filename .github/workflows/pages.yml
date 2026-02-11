@@ -67,7 +67,8 @@ jobs:
             output_dir: cockpits/lendy-graduation-retention/outputs
             site_output_dir: cockpits/lendy-graduation-retention/outputs
             run_cmd: |
-              python projects/lendy-graduation-retention/pipeline.py
+              ln -sfn lendy-graduation-retention projects/lendy_graduation_retention
+              python -m projects.lendy_graduation_retention.pipeline
             working_dir: .
 
     steps:
